@@ -475,6 +475,10 @@ class ProgressReporter {
     isTty_ = isatty(STDOUT_FILENO);
   }
 
+  // method to set custom progress reporter callbacks
+  void set_callbacks(std::function<void(int, double, double, int64_t, bool)> &displayProgreeCallback,
+                     std::function<void(int64_t, int, double, double, int64_t, bool)> &logProgressCallback);
+
   /// this method is called before the transfer starts
   virtual void start() {
   }
@@ -503,6 +507,9 @@ class ProgressReporter {
   /// Reference to the wdt transfer request for the wdt base
   /// object using the progress reporter
   const WdtTransferRequest &transferRequest_;
+  bool useCallbacks = 0;
+  std::function<void(int, double, double, int64_t, bool)> displayProgressCallback_;
+  std::function<void(int64_t, int, double, double, int64_t, bool)> logProgressCallback_;
 
  private:
   /**

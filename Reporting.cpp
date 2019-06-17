@@ -278,16 +278,29 @@ void ProgressReporter::progress(const std::unique_ptr<TransferReport>& report) {
     progress = stats.getEffectiveDataBytes() * 100 / totalDiscoveredSize;
   }
   if (isTty_) {
-    displayProgress(progress, report->getThroughputMBps(),
-                    report->getCurrentThroughputMBps(),
+    if (useCallbacks){
+        displayProgressCallback_(progress, report->getThroughputMBps(),
+                        report->getCurrentThroughputMBps(),
+                        report->getNumDiscoveredFiles(),
+                        report->fileDiscoveryFinished());
+    } else {
+        displayProgress(progress, report->getThroughputMBps(),
+                        report->getCurrentThroughputMBps(),
+                        report->getNumDiscoveredFiles(),
+                        report->fileDiscoveryFinished());
+    }
+  } else {
+    if (useCallbacks){
+        logProgressCallback_(stats.getEffectiveDataBytes(), progress,
+                    report->getThroughputMBps(), report->getCurrentThroughputMBps(),
                     report->getNumDiscoveredFiles(),
                     report->fileDiscoveryFinished());
-  } else {
-    logProgress(stats.getEffectiveDataBytes(), progress,
-                report->getThroughputMBps(), report->getCurrentThroughputMBps(),
-                report->getNumDiscoveredFiles(),
-                report->fileDiscoveryFinished());
-  }
+    } else {
+        logProgress(stats.getEffectiveDataBytes(), progress,
+                    report->getThroughputMBps(), report->getCurrentThroughputMBps(),
+                    report->getNumDiscoveredFiles(),
+                    report->fileDiscoveryFinished());
+    }
 }
 
 void ProgressReporter::end(const std::unique_ptr<TransferReport>& report) {
