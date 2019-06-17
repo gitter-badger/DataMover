@@ -64,7 +64,7 @@ ErrorCode WdtBase::getCurAbortCode() const {
 }
 
 void WdtBase::setProgressReporter(
-    std::unique_ptr<ProgressReporter>& progressReporter) {
+    std::shared_ptr<ProgressReporter>& progressReporter) {
   progressReporter_ = std::move(progressReporter);
 }
 

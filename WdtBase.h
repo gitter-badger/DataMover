@@ -80,7 +80,7 @@ class WdtBase {
 
   /// Wdt objects can report progress. Setter for progress reporter
   /// defined in Reporting.h
-  void setProgressReporter(std::unique_ptr<ProgressReporter>& progressReporter);
+  void setProgressReporter(std::shared_ptr<ProgressReporter>& progressReporter);
 
   /// Set throttler externally. Should be set before any transfer calls
   void setThrottler(std::shared_ptr<Throttler> throttler);
@@ -173,7 +173,7 @@ class WdtBase {
   std::shared_ptr<Throttler> throttler_;
 
   /// Holds the instance of the progress reporter default or customized
-  std::unique_ptr<ProgressReporter> progressReporter_;
+  std::shared_ptr<ProgressReporter> progressReporter_;
 
   /// abort checker passed to socket functions
   AbortChecker abortCheckerCallback_;

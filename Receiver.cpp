@@ -358,7 +358,7 @@ ErrorCode Receiver::transferAsync() {
   int progressReportIntervalMillis = options_.progress_report_interval_millis;
   if (!progressReporter_ && progressReportIntervalMillis > 0) {
     // if progress reporter has not been set, use the default one
-    progressReporter_ = std::make_unique<ProgressReporter>(transferRequest_);
+    progressReporter_ = std::make_shared<ProgressReporter>(transferRequest_);
   }
   return start();
 }

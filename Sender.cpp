@@ -317,7 +317,7 @@ ErrorCode Sender::start() {
                            options_.delete_extra_files);
   if (!progressReporter_) {
     WVLOG(1) << "No progress reporter provided, making a default one";
-    progressReporter_ = std::make_unique<ProgressReporter>(transferRequest_);
+    progressReporter_ = std::make_shared<ProgressReporter>(transferRequest_);
   }
   bool progressReportEnabled =
       progressReporter_ && progressReportIntervalMillis_ > 0;
