@@ -4,7 +4,8 @@
 # wait for the receiver to finish. Read timeout for sender is small to trigger
 # tcp unacked bytes checking code.
 
-from common_utils import *
+from __future__ import absolute_import
+from .common_utils import *
 
 # 1 time setup
 create_test_directory("/tmp")

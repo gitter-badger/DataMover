@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+from __future__ import print_function
+from __future__ import absolute_import
 from common_utils import *
 
 
@@ -7,7 +9,7 @@ def run_test(name, sender_extra_flags, fail_transfer=False):
     start_test(name)
     connection_url = start_receiver(wdt_receiver_arg)
     if fail_transfer is True:
-        connection_url += "&id=blah1234"
+        connection_url += s2b("&id=blah1234")
     sender_arg = "{0} -manifest {1}/file_list {2}".format(
         wdt_sender_arg, root_dir, sender_extra_flags
     )
@@ -30,10 +32,10 @@ for root, dirs, files in os.walk(src_dir):
             continue
         if file == "file1":
             # add a size for file1
-            file_list_in.write("{0}\t{1}".format(file, 1025))
+            file_list_in.write(s2b("{0}\t{1}".format(file, 1025)))
         else:
-            file_list_in.write(file)
-        file_list_in.write('\n')
+            file_list_in.write(s2b(file))
+        file_list_in.write(s2b('\n'))
 file_list_in.close()
 print("Done with set-up")
 

@@ -1,3 +1,8 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import hex
+from builtins import range
+from past.utils import old_div
 import os
 import hashlib
 import difflib
@@ -8,6 +13,19 @@ import errno
 import string
 import random
 import time
+import sys
+
+
+if sys.version_info[0] == 3:
+    def b2s(s):
+        return s.decode("utf-8")
+    def s2b(s):
+        return s.encode("utf-8")
+else:
+    def b2s(s):
+        return s
+    def s2b(s):
+        return s
 
 
 def get_env(name):
@@ -100,7 +118,7 @@ def get_wdt_version():
     dummy_cmd = bin + " --version"
     dummy_process = subprocess.Popen(dummy_cmd.split(), stdout=subprocess.PIPE)
     protocol_string = dummy_process.stdout.readline().strip()
-    print("Wdt " + bin + " version is " + protocol_string)
+    print("Wdt " + bin + " version is " + b2s(protocol_string))
     return protocol_string.split()[4]
 
 
@@ -150,7 +168,7 @@ def run_sender(extra_args, url=""):
         url = connection_url
     sender_cmd = extend_wdt_options(sender_binary)
     sender_cmd = "{0} -directory {1}/src -connection_url '{2}' {3}".format(
-        sender_cmd, root_dir, url, extra_args
+        sender_cmd, root_dir, b2s(url), extra_args
     )
     # TODO: fix this to not use tee, this is python...
     sender_cmd = "bash -c \"set -o pipefail; " + sender_cmd \
@@ -270,7 +288,7 @@ def generate_random_files(total_size):
         "Creating random files, size {0}, into {1}".format(total_size, src_dir)
     )
     create_directory(src_dir)
-    seed_size = int(total_size / 70)
+    seed_size = int(old_div(total_size, 70))
     gen_files = get_gen_files()
     for i in range(0, 4):
         file_name = "sample{0}".format(i)
@@ -308,7 +326,7 @@ def create_md5_for_directory(src_dir, md5_file_name):
     lines.sort()
     md5_in = open(md5_file_name, 'wb')
     for line in lines:
-        md5_in.write(line + "\n")
+        md5_in.write(s2b(line + "\n"))
 
 
 def verify_transfer_success():

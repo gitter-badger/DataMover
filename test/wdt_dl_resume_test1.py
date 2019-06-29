@@ -8,8 +8,10 @@
 # in the end the test ensures that receiver imposes
 # -enable_download_resumption on the sender
 
+from __future__ import print_function
+from __future__ import absolute_import
 from time import time
-from common_utils import *
+from .common_utils import *
 
 root_dir = create_test_directory("/tmp")
 generate_random_files(100 * 1024 * 1024)

@@ -5,6 +5,8 @@
 # should detect that the other side is making no progress and return with
 # NO_PROGRESS status.
 
+from __future__ import print_function
+from __future__ import absolute_import
 import socket
 import threading
 from common_utils import *
@@ -51,7 +53,7 @@ read_timeout = 500
 # start a wdt sender
 sender_status = run_sender(
     "-read_timeout_millis={0}".format(read_timeout),
-    "wdt://[::1]:{0}?num_ports=1".format(port)
+    s2b("wdt://[::1]:{0}?num_ports=1".format(port))
 )
 stop = True
 server_thread.join()
