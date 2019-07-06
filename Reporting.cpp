@@ -301,6 +301,14 @@ void ProgressReporter::progress(const std::unique_ptr<TransferReport>& report) {
                     report->getNumDiscoveredFiles(),
                     report->fileDiscoveryFinished());
     }
+  }
+}
+
+void ProgressReporter::setCallbacks(std::function<void(int, double, double, int64_t, bool)> &displayProgreeCallback,
+                                     std::function<void(int64_t, int, double, double, int64_t, bool)> &logProgressCallback) {
+    useCallbacks = 1;
+    displayProgressCallback_ = displayProgreeCallback;
+    logProgressCallback_ = logProgressCallback;
 }
 
 void ProgressReporter::end(const std::unique_ptr<TransferReport>& report) {

@@ -476,7 +476,7 @@ class ProgressReporter {
   }
 
   // method to set custom progress reporter callbacks
-  void set_callbacks(std::function<void(int, double, double, int64_t, bool)> &displayProgreeCallback,
+  void setCallbacks(std::function<void(int, double, double, int64_t, bool)> &displayProgreeCallback,
                      std::function<void(int64_t, int, double, double, int64_t, bool)> &logProgressCallback);
 
   /// this method is called before the transfer starts
