@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
-from common_utils import *
+from __future__ import absolute_import
+from .common_utils import *
 
 # 1 time setup
 create_test_directory("/dev/shm")

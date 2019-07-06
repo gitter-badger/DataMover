@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+from __future__ import absolute_import
 from common_utils import *
 
 
@@ -12,7 +14,7 @@ def run_test(test_name, connection_url):
 
 
 wdt_version = get_wdt_version()
-print("wdt protocol version " + wdt_version)
+print("wdt protocol version " + b2s(wdt_version))
 
 create_test_directory("/tmp")
 
@@ -32,8 +34,8 @@ run_test("sender 1 same version", connection_url)
 run_test("sender 2 same version", connection_url)
 
 protocol_key = "recpv"
-prev_str = "{0}={1}".format(protocol_key, receiver_version)
-new_str = "{0}={1}".format(protocol_key, wdt_version)
+prev_str = s2b("{0}={1}".format(protocol_key, receiver_version))
+new_str = s2b("{0}={1}".format(protocol_key, b2s(wdt_version)))
 
 connection_url_new_version = connection_url.replace(prev_str, new_str)
 

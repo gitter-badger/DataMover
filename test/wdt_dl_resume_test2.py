@@ -6,8 +6,10 @@
 # there was a bug where we did not delete these files when
 # sender/receiver mismatch on enable_download_resumption
 
+from __future__ import print_function
+from __future__ import absolute_import
 from time import time
-from common_utils import *
+from .common_utils import *
 import os
 
 

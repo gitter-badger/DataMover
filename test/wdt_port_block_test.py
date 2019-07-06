@@ -1,5 +1,9 @@
 #! /usr/bin/env python
 
+from __future__ import print_function
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
 import re
 from threading import Thread
 from common_utils import *
@@ -35,7 +39,8 @@ def test(resumption):
         stdout=subprocess.PIPE
     )
 
-    connection_url = receiver_process.stdout.readline().strip()
+    connection_url = b2s(receiver_process.stdout.readline().strip())
+    print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     print(connection_url)
     # wdt url can be of two kinds :
     # 1. wdt://localhost?ports=1,2,3,4
