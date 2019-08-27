@@ -40,7 +40,7 @@ TransferStats& TransferStats::operator+=(const TransferStats& stats) {
                                         << stats.numBlocksSend_;
     localErrCode_ = ERROR;
   }
-  if (totalSenderBytes_ == -1) {
+  if (totalSenderBytes_ == -1) { // FIXME: rname sender
     totalSenderBytes_ = stats.totalSenderBytes_;
   } else if (stats.totalSenderBytes_ != -1 &&
              totalSenderBytes_ != stats.totalSenderBytes_) {

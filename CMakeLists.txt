@@ -95,8 +95,8 @@ Receiver.cpp
 WdtTransferRequest.cpp
 Reporting.cpp
 util/ThreadTransferHistory.cpp
-SenderThread.cpp
-Sender.cpp
+workers/FileWdtThread.cpp
+workers/FIleWdt.cpp
 util/ServerSocket.cpp
 Throttler.cpp
 WdtOptions.cpp
