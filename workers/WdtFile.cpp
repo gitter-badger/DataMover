@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
-#include <wdt/Receiver.h>
+#include <wdt/workers/WdtFile.h>
 #include <wdt/util/EncryptionUtils.h>
 #include <wdt/util/ServerSocket.h>
 
@@ -24,14 +24,14 @@
 namespace facebook {
 namespace wdt {
 
-void Receiver::addCheckpoint(Checkpoint checkpoint) {
+void WdtFile::addCheckpoint(Checkpoint checkpoint) {
   WLOG(INFO) << "Adding global checkpoint " << checkpoint.port << " "
              << checkpoint.numBlocks << " "
              << checkpoint.lastBlockReceivedBytes;
   checkpoints_.emplace_back(checkpoint);
 }
 
-std::vector<Checkpoint> Receiver::getNewCheckpoints(int startIndex) {
+std::vector<Checkpoint> WdtFile::getNewCheckpoints(int startIndex) {
   std::vector<Checkpoint> checkpoints;
   const int64_t numCheckpoints = checkpoints_.size();
   for (int64_t i = startIndex; i < numCheckpoints; i++) {
@@ -40,20 +40,20 @@ std::vector<Checkpoint> Receiver::getNewCheckpoints(int startIndex) {
   return checkpoints;
 }
 
-Receiver::Receiver(const WdtTransferRequest &transferRequest) {
-  WLOG(INFO) << "WDT Receiver " << Protocol::getFullVersion();
+WdtFile::WdtFile(const WdtTransferRequest &transferRequest) {
+  WLOG(INFO) << "WDT WdtFile " << Protocol::getFullVersion();
   transferRequest_ = transferRequest;
 }
 
-Receiver::Receiver(int port, int numSockets, const std::string &destDir)
-    : Receiver(WdtTransferRequest(port, numSockets, destDir)) {
+WdtFile::WdtFile(int port, int numSockets, const std::string &destDir)
+    : WdtFile(WdtTransferRequest(port, numSockets, destDir)) {
 }
 
-void Receiver::setSocketCreator(Receiver::ISocketCreator *socketCreator) {
+void WdtFile::setSocketCreator(WdtFile::ISocketCreator *socketCreator) {
     socketCreator_ = socketCreator;
 }
 
-void Receiver::traverseDestinationDir(
+void WdtFile::traverseDestinationDir(
     std::vector<FileChunksInfo> &fileChunksInfo) {
   DirectorySourceQueue dirQueue(options_, getDirectory(),
                                 &abortCheckerCallback_);
@@ -75,7 +75,7 @@ void Receiver::traverseDestinationDir(
   return;
 }
 
-void Receiver::startNewGlobalSession(const std::string &peerIp) {
+void WdtFile::startNewGlobalSession(const std::string &peerIp) {
   if (throttler_) {
     // If throttler is configured/set then register this session
     // in the throttler. This is guranteed to work in either of the
@@ -96,11 +96,11 @@ void Receiver::startNewGlobalSession(const std::string &peerIp) {
              << getTransferId();
 }
 
-bool Receiver::hasNewTransferStarted() const {
+bool WdtFile::hasNewTransferStarted() const {
   return hasNewTransferStarted_.load();
 }
 
-void Receiver::endCurGlobalSession() {
+void WdtFile::endCurGlobalSession() {
   setTransferStatus(FINISHED);
   if (!hasNewTransferStarted_) {
     WLOG(WARNING) << "WDT transfer did not start, no need to end session";
@@ -118,7 +118,7 @@ void Receiver::endCurGlobalSession() {
   hasNewTransferStarted_.store(false);
 }
 
-const WdtTransferRequest &Receiver::init() {
+const WdtTransferRequest &WdtFile::init() {
   if (validateTransferRequest() != OK) {
     WLOG(ERROR) << "Couldn't validate the transfer request "
                 << transferRequest_.getLogSafeString();
@@ -172,7 +172,7 @@ const WdtTransferRequest &Receiver::init() {
     WLOG(INFO) << encryptionTypeToStr(encryptionType)
                << " encryption is enabled for this transfer ";
     if (!transferRequest_.encryptionData.isSet()) {
-      WLOG(INFO) << "Receiver generating encryption key for type "
+      WLOG(INFO) << "WdtFile generating encryption key for type "
                  << encryptionTypeToStr(encryptionType);
       transferRequest_.encryptionData =
           EncryptionParams::generateEncryptionParams(encryptionType);
@@ -199,11 +199,11 @@ const WdtTransferRequest &Receiver::init() {
     setAcceptMode(ACCEPT_FOREVER);
   }
   threadsController_ = new ThreadsController(numThreads);
-  threadsController_->setNumFunnels(ReceiverThread::NUM_FUNNELS);
-  threadsController_->setNumBarriers(ReceiverThread::NUM_BARRIERS);
-  threadsController_->setNumConditions(ReceiverThread::NUM_CONDITIONS);
+  threadsController_->setNumFunnels(WdtFileThread::NUM_FUNNELS);
+  threadsController_->setNumBarriers(WdtFileThread::NUM_BARRIERS);
+  threadsController_->setNumConditions(WdtFileThread::NUM_CONDITIONS);
   // TODO: take transferRequest directly !
-  receiverThreads_ = threadsController_->makeThreads<Receiver, ReceiverThread>(
+  receiverThreads_ = threadsController_->makeThreads<WdtFile, WdtFileThread>(
       this, transferRequest_.ports.size(), transferRequest_.ports);
   size_t numSuccessfulInitThreads = 0;
   for (auto &receiverThread : receiverThreads_) {
@@ -243,30 +243,30 @@ const WdtTransferRequest &Receiver::init() {
   return transferRequest_;
 }
 
-TransferLogManager &Receiver::getTransferLogManager() {
+TransferLogManager &WdtFile::getTransferLogManager() {
   return *transferLogManager_;
 }
 
-std::unique_ptr<FileCreator> &Receiver::getFileCreator() {
+std::unique_ptr<FileCreator> &WdtFile::getFileCreator() {
   return fileCreator_;
 }
 
-void Receiver::setRecoveryId(const std::string &recoveryId) {
+void WdtFile::setRecoveryId(const std::string &recoveryId) {
   recoveryId_ = recoveryId;
   WLOG(INFO) << "recovery id " << recoveryId_;
 }
 
-void Receiver::setAcceptMode(const AcceptMode acceptMode) {
+void WdtFile::setAcceptMode(const AcceptMode acceptMode) {
   std::lock_guard<std::mutex> lock(mutex_);
   acceptMode_ = acceptMode;
 }
 
-Receiver::AcceptMode Receiver::getAcceptMode() {
+WdtFile::AcceptMode WdtFile::getAcceptMode() {
   std::lock_guard<std::mutex> lock(mutex_);
   return acceptMode_;
 }
 
-Receiver::~Receiver() {
+WdtFile::~WdtFile() {
   TransferStatus status = getTransferStatus();
   if (status == ONGOING) {
     WLOG(WARNING) << "There is an ongoing transfer and the destructor"
@@ -276,11 +276,11 @@ Receiver::~Receiver() {
   finish();
 }
 
-const std::vector<FileChunksInfo> &Receiver::getFileChunksInfo() const {
+const std::vector<FileChunksInfo> &WdtFile::getFileChunksInfo() const {
   return fileChunksInfo_;
 }
 
-int64_t Receiver::getTransferConfig() const {
+int64_t WdtFile::getTransferConfig() const {
   int64_t config = 0;
   if (options_.shouldPreallocateFiles()) {
     config = 1;
@@ -291,7 +291,7 @@ int64_t Receiver::getTransferConfig() const {
   return config;
 }
 
-std::unique_ptr<TransferReport> Receiver::finish() {
+std::unique_ptr<TransferReport> WdtFile::finish() {
   std::unique_lock<std::mutex> instanceLock(instanceManagementMutex_);
   TransferStatus status = getTransferStatus();
   if (status == NOT_STARTED) {
@@ -336,7 +336,7 @@ std::unique_ptr<TransferReport> Receiver::finish() {
   return report;
 }
 
-std::unique_ptr<TransferReport> Receiver::getTransferReport() {
+std::unique_ptr<TransferReport> WdtFile::getTransferReport() {
   TransferStats globalStats;
   for (const auto &receiverThread : receiverThreads_) {
     globalStats += receiverThread->getTransferStats();
@@ -353,7 +353,7 @@ std::unique_ptr<TransferReport> Receiver::getTransferReport() {
   return transferReport;
 }
 
-ErrorCode Receiver::transferAsync() {
+ErrorCode WdtFile::transferAsync() {
   isJoinable_ = true;
   int progressReportIntervalMillis = options_.progress_report_interval_millis;
   if (!progressReporter_ && progressReportIntervalMillis > 0) {
@@ -363,7 +363,7 @@ ErrorCode Receiver::transferAsync() {
   return start();
 }
 
-ErrorCode Receiver::runForever() {
+ErrorCode WdtFile::runForever() {
   WDT_CHECK(!options_.enable_download_resumption)
       << "Transfer resumption not supported in long running mode";
 
@@ -379,7 +379,7 @@ ErrorCode Receiver::runForever() {
   return ERROR;
 }
 
-void Receiver::progressTracker() {
+void WdtFile::progressTracker() {
   // Progress tracker will check for progress after the time specified
   // in milliseconds.
   int progressReportIntervalMillis = options_.progress_report_interval_millis;
@@ -439,7 +439,7 @@ void Receiver::progressTracker() {
   }
 }
 
-void Receiver::logPerfStats() const {
+void WdtFile::logPerfStats() const {
   if (!options_.enable_perf_stat_collection) {
     return;
   }
@@ -451,7 +451,7 @@ void Receiver::logPerfStats() const {
   WLOG(INFO) << globalPerfReport;
 }
 
-ErrorCode Receiver::start() {
+ErrorCode WdtFile::start() {
   WDT_CHECK_EQ(getTransferStatus(), NOT_STARTED)
       << "There is already a transfer running on this instance of receiver";
   startTime_ = Clock::now();
@@ -487,13 +487,13 @@ ErrorCode Receiver::start() {
     if (progressReporter_) {
       progressReporter_->start();
     }
-    std::thread trackerThread(&Receiver::progressTracker, this);
+    std::thread trackerThread(&WdtFile::progressTracker, this);
     progressTrackerThread_ = std::move(trackerThread);
   }
   return OK;
 }
 
-void Receiver::addTransferLogHeader(bool isBlockMode, bool isSenderResuming) {
+void WdtFile::addTransferLogHeader(bool isBlockMode, bool isSenderResuming) {
   if (!options_.enable_download_resumption) {
     return;
   }
@@ -518,7 +518,7 @@ void Receiver::addTransferLogHeader(bool isBlockMode, bool isSenderResuming) {
   }
 }
 
-void Receiver::fixAndCloseTransferLog(bool transferSuccess) {
+void WdtFile::fixAndCloseTransferLog(bool transferSuccess) {
   if (!options_.enable_download_resumption) {
     return;
   }

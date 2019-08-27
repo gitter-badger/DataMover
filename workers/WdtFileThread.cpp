@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
-#include <wdt/ReceiverThread.h>
+#include <wdt/workers/WdtFileThread.h>
 #include <folly/Conv.h>
 #include <folly/Memory.h>
 #include <folly/ScopeGuard.h>
@@ -22,7 +22,7 @@ const static int kTimeoutBufferMillis = 1000;
 const static int kWaitTimeoutFactor = 5;
 
 std::ostream &operator<<(std::ostream &os,
-                         const ReceiverThread &receiverThread) {
+                         const WdtFileThread &receiverThread) {
   os << "Thread[" << receiverThread.threadIndex_
      << ", port: " << receiverThread.socket_->getPort() << "] ";
   return os;
@@ -79,24 +79,24 @@ int64_t readAtMost(IServerSocket &s, char *buf, int64_t max, int64_t atMost) {
   return n;
 }
 
-const ReceiverThread::StateFunction ReceiverThread::stateMap_[] = {
-    &ReceiverThread::listen,
-    &ReceiverThread::acceptFirstConnection,
-    &ReceiverThread::acceptWithTimeout,
-    &ReceiverThread::sendLocalCheckpoint,
-    &ReceiverThread::readNextCmd,
-    &ReceiverThread::processFileCmd,
-    &ReceiverThread::processSettingsCmd,
-    &ReceiverThread::processDoneCmd,
-    &ReceiverThread::processSizeCmd,
-    &ReceiverThread::sendFileChunks,
-    &ReceiverThread::sendGlobalCheckpoint,
-    &ReceiverThread::sendDoneCmd,
-    &ReceiverThread::sendAbortCmd,
-    &ReceiverThread::waitForFinishOrNewCheckpoint,
-    &ReceiverThread::finishWithError};
+const WdtFileThread::StateFunction WdtFileThread::stateMap_[] = {
+    &WdtFileThread::listen,
+    &WdtFileThread::acceptFirstConnection,
+    &WdtFileThread::acceptWithTimeout,
+    &WdtFileThread::sendLocalCheckpoint,
+    &WdtFileThread::readNextCmd,
+    &WdtFileThread::processFileCmd,
+    &WdtFileThread::processSettingsCmd,
+    &WdtFileThread::processDoneCmd,
+    &WdtFileThread::processSizeCmd,
+    &WdtFileThread::sendFileChunks,
+    &WdtFileThread::sendGlobalCheckpoint,
+    &WdtFileThread::sendDoneCmd,
+    &WdtFileThread::sendAbortCmd,
+    &WdtFileThread::waitForFinishOrNewCheckpoint,
+    &WdtFileThread::finishWithError};
 
-ReceiverThread::ReceiverThread(Receiver *wdtParent, int threadIndex,
+WdtFileThread::WdtFileThread(WdtFile *wdtParent, int threadIndex,
                                int32_t port, ThreadsController *controller)
     : WdtThread(wdtParent->options_, threadIndex, port,
                 wdtParent->getProtocolVersion(), controller),
@@ -106,7 +106,7 @@ ReceiverThread::ReceiverThread(Receiver *wdtParent, int threadIndex,
 }
 
 /**LISTEN STATE***/
-ReceiverState ReceiverThread::listen() {
+WdtFileState WdtFileThread::listen() {
   WTVLOG(1) << "entered LISTEN state";
   const bool doActualWrites = !options_.skip_writes;
   int32_t port = socket_->getPort();
@@ -136,7 +136,7 @@ ReceiverState ReceiverThread::listen() {
 }
 
 /***ACCEPT_FIRST_CONNECTION***/
-ReceiverState ReceiverThread::acceptFirstConnection() {
+WdtFileState WdtFileThread::acceptFirstConnection() {
   WTVLOG(1) << "entered ACCEPT_FIRST_CONNECTION state";
 
   reset();
@@ -150,7 +150,7 @@ ReceiverState ReceiverThread::acceptFirstConnection() {
       return ACCEPT_WITH_TIMEOUT;
     }
     switch (wdtParent_->getAcceptMode()) {
-      case Receiver::AcceptMode::ACCEPT_WITH_RETRIES: {
+      case WdtFile::AcceptMode::ACCEPT_WITH_RETRIES: {
         if (acceptAttempts >= options_.max_accept_retries) {
           WTLOG(ERROR) << "Unable to accept after " << acceptAttempts
                        << " attempts";
@@ -159,12 +159,12 @@ ReceiverState ReceiverThread::acceptFirstConnection() {
         }
         break;
       }
-      case Receiver::AcceptMode::ACCEPT_FOREVER: {
-        WTVLOG(2) << "Receiver is configured to accept for-ever";
+      case WdtFile::AcceptMode::ACCEPT_FOREVER: {
+        WTVLOG(2) << "WdtFile is configured to accept for-ever";
         break;
       }
-      case Receiver::AcceptMode::STOP_ACCEPTING: {
-        WTLOG(ERROR) << "Receiver is asked to stop accepting, attempts : "
+      case WdtFile::AcceptMode::STOP_ACCEPTING: {
+        WTLOG(ERROR) << "WdtFile is asked to stop accepting, attempts : "
                      << acceptAttempts;
         threadStats_.setLocalErrorCode(CONN_ERROR);
         return FINISH_WITH_ERROR;
@@ -191,7 +191,7 @@ ReceiverState ReceiverThread::acceptFirstConnection() {
 }
 
 /***ACCEPT_WITH_TIMEOUT STATE***/
-ReceiverState ReceiverThread::acceptWithTimeout() {
+WdtFileState WdtFileThread::acceptWithTimeout() {
   WTLOG(INFO) << "entered ACCEPT_WITH_TIMEOUT state";
 
   // check socket status
@@ -223,7 +223,7 @@ ReceiverState ReceiverThread::acceptWithTimeout() {
 
   numRead_ = off_ = 0;
   pendingCheckpointIndex_ = checkpointIndex_;
-  ReceiverState nextState = READ_NEXT_CMD;
+  WdtFileState nextState = READ_NEXT_CMD;
   if (threadStats_.getLocalErrorCode() != OK) {
     nextState = SEND_LOCAL_CHECKPOINT;
   }
@@ -233,7 +233,7 @@ ReceiverState ReceiverThread::acceptWithTimeout() {
 }
 
 /***SEND_LOCAL_CHECKPOINT STATE***/
-ReceiverState ReceiverThread::sendLocalCheckpoint() {
+WdtFileState WdtFileThread::sendLocalCheckpoint() {
   WTLOG(INFO) << "entered SEND_LOCAL_CHECKPOINT state " << checkpoint_;
   std::vector<Checkpoint> checkpoints;
   checkpoints.emplace_back(checkpoint_);
@@ -255,7 +255,7 @@ ReceiverState ReceiverThread::sendLocalCheckpoint() {
 }
 
 /***READ_NEXT_CMD***/
-ReceiverState ReceiverThread::readNextCmd() {
+WdtFileState WdtFileThread::readNextCmd() {
   WTVLOG(1) << "entered READ_NEXT_CMD state";
   oldOffset_ = off_;
   // TODO: we shouldn't have off_ here and buffer/size inside buffer.
@@ -286,7 +286,7 @@ ReceiverState ReceiverThread::readNextCmd() {
 }
 
 /***PROCESS_SETTINGS_CMD***/
-ReceiverState ReceiverThread::processSettingsCmd() {
+WdtFileState WdtFileThread::processSettingsCmd() {
   WTVLOG(1) << "entered PROCESS_SETTINGS_CMD state";
   Settings settings;
   int senderProtocolVersion;
@@ -299,7 +299,7 @@ ReceiverState ReceiverThread::processSettingsCmd() {
     return FINISH_WITH_ERROR;
   }
   if (senderProtocolVersion != threadProtocolVersion_) {
-    WTLOG(WARNING) << "Receiver and sender protocol version mismatch "
+    WTLOG(WARNING) << "WdtFile and sender protocol version mismatch "
                    << senderProtocolVersion << " " << threadProtocolVersion_;
     int negotiatedProtocol = Protocol::negotiateProtocol(
         senderProtocolVersion, threadProtocolVersion_);
@@ -336,7 +336,7 @@ ReceiverState ReceiverThread::processSettingsCmd() {
   auto senderId = settings.transferId;
   auto transferId = wdtParent_->getTransferId();
   if (transferId != senderId) {
-    WTLOG(ERROR) << "Receiver and sender id mismatch " << senderId << " "
+    WTLOG(ERROR) << "WdtFile and sender id mismatch " << senderId << " "
                  << transferId;
     threadStats_.setLocalErrorCode(ID_MISMATCH);
     return SEND_ABORT_CMD;
@@ -368,7 +368,7 @@ ReceiverState ReceiverThread::processSettingsCmd() {
   return READ_NEXT_CMD;
 }
 
-void ReceiverThread::sendHeartBeat() {
+void WdtFileThread::sendHeartBeat() {
   if (!enableHeartBeat_) {
     return;
   }
@@ -388,7 +388,7 @@ void ReceiverThread::sendHeartBeat() {
 }
 
 /***PROCESS_FILE_CMD***/
-ReceiverState ReceiverThread::processFileCmd() {
+WdtFileState WdtFileThread::processFileCmd() {
   WTVLOG(1) << "entered PROCESS_FILE_CMD state";
   // following block needs to be executed for the first file cmd. There is no
   // harm in executing it more than once. number of blocks equal to 0 is a good
@@ -667,7 +667,7 @@ ReceiverState ReceiverThread::processFileCmd() {
   return READ_NEXT_CMD;
 }
 
-void ReceiverThread::markBlockVerified(const BlockDetails &blockDetails) {
+void WdtFileThread::markBlockVerified(const BlockDetails &blockDetails) {
   threadStats_.addEffectiveBytes(0, blockDetails.dataSize);
   threadStats_.incrNumBlocks();
   checkpoint_.incrNumBlocks();
@@ -683,14 +683,14 @@ void ReceiverThread::markBlockVerified(const BlockDetails &blockDetails) {
                                         blockDetails.dataSize);
 }
 
-void ReceiverThread::markReceivedBlocksVerified() {
+void WdtFileThread::markReceivedBlocksVerified() {
   for (const BlockDetails &blockDetails : blocksWaitingVerification_) {
     markBlockVerified(blockDetails);
   }
   blocksWaitingVerification_.clear();
 }
 
-ReceiverState ReceiverThread::processDoneCmd() {
+WdtFileState WdtFileThread::processDoneCmd() {
   WTVLOG(1) << "entered PROCESS_DONE_CMD state";
   if (numRead_ != Protocol::kMinBufLength) {
     WTLOG(ERROR) << "Unexpected state for done command"
@@ -719,7 +719,7 @@ ReceiverState ReceiverThread::processDoneCmd() {
   return WAIT_FOR_FINISH_OR_NEW_CHECKPOINT;
 }
 
-ReceiverState ReceiverThread::processSizeCmd() {
+WdtFileState WdtFileThread::processSizeCmd() {
   WTVLOG(1) << "entered PROCESS_SIZE_CMD state";
   int64_t totalSenderBytes;
   bool success = Protocol::decodeSize(
@@ -736,7 +736,7 @@ ReceiverState ReceiverThread::processSizeCmd() {
   return READ_NEXT_CMD;
 }
 
-ReceiverState ReceiverThread::sendFileChunks() {
+WdtFileState WdtFileThread::sendFileChunks() {
   WTLOG(INFO) << "entered SEND_FILE_CHUNKS state";
   WDT_CHECK(senderReadTimeout_ > 0);  // must have received settings
   int waitingTimeMillis = senderReadTimeout_ / kWaitTimeoutFactor;
@@ -832,7 +832,7 @@ ReceiverState ReceiverThread::sendFileChunks() {
   }
 }
 
-ReceiverState ReceiverThread::sendGlobalCheckpoint() {
+WdtFileState WdtFileThread::sendGlobalCheckpoint() {
   WTLOG(INFO) << "entered SEND_GLOBAL_CHECKPOINTS state";
   buf_[0] = Protocol::ERR_CMD;
   off_ = 1;
@@ -857,7 +857,7 @@ ReceiverState ReceiverThread::sendGlobalCheckpoint() {
   }
 }
 
-ReceiverState ReceiverThread::sendAbortCmd() {
+WdtFileState WdtFileThread::sendAbortCmd() {
   WTLOG(INFO) << "entered SEND_ABORT_CMD state";
   int64_t offset = 0;
   buf_[offset++] = Protocol::ABORT_CMD;
@@ -871,13 +871,13 @@ ReceiverState ReceiverThread::sendAbortCmd() {
   socket_->closeConnection();
   threadStats_.addHeaderBytes(offset);
   if (threadStats_.getLocalErrorCode() == VERSION_MISMATCH) {
-    // Receiver should try again expecting sender to have changed its version
+    // WdtFile should try again expecting sender to have changed its version
     return ACCEPT_WITH_TIMEOUT;
   }
   return FINISH_WITH_ERROR;
 }
 
-ReceiverState ReceiverThread::sendDoneCmd() {
+WdtFileState WdtFileThread::sendDoneCmd() {
   WTVLOG(1) << "entered SEND_DONE_CMD state";
   buf_[0] = Protocol::DONE_CMD;
   if (socket_->write(buf_, 1) != 1) {
@@ -907,7 +907,7 @@ ReceiverState ReceiverThread::sendDoneCmd() {
   return END;
 }
 
-ReceiverState ReceiverThread::finishWithError() {
+WdtFileState WdtFileThread::finishWithError() {
   WTLOG(INFO) << "entered FINISH_WITH_ERROR state";
   // should only be in this state if there is some error
   WDT_CHECK(threadStats_.getLocalErrorCode() != OK);
@@ -928,7 +928,7 @@ ReceiverState ReceiverThread::finishWithError() {
   return END;
 }
 
-ReceiverState ReceiverThread::checkForFinishOrNewCheckpoints() {
+WdtFileState WdtFileThread::checkForFinishOrNewCheckpoints() {
   auto checkpoints = wdtParent_->getNewCheckpoints(checkpointIndex_);
   if (!checkpoints.empty()) {
     newCheckpoints_ = std::move(checkpoints);
@@ -943,7 +943,7 @@ ReceiverState ReceiverThread::checkForFinishOrNewCheckpoints() {
   return WAIT_FOR_FINISH_OR_NEW_CHECKPOINT;
 }
 
-ReceiverState ReceiverThread::waitForFinishOrNewCheckpoint() {
+WdtFileState WdtFileThread::waitForFinishOrNewCheckpoint() {
   WTLOG(INFO) << "entered WAIT_FOR_FINISH_OR_NEW_CHECKPOINT state";
   // should only be called if the are no errors
   WDT_CHECK(threadStats_.getLocalErrorCode() == OK);
@@ -982,13 +982,13 @@ ReceiverState ReceiverThread::waitForFinishOrNewCheckpoint() {
   }
 }
 
-void ReceiverThread::start() {
+void WdtFileThread::start() {
   if (buf_ == nullptr) {
     WTLOG(ERROR) << "Unable to allocate buffer";
     threadStats_.setLocalErrorCode(MEMORY_ALLOCATION_ERROR);
     return;
   }
-  ReceiverState state = LISTEN;
+  WdtFileState state = LISTEN;
   while (true) {
     ErrorCode abortCode = wdtParent_->getCurAbortCode();
     if (abortCode != OK) {
@@ -1009,11 +1009,11 @@ void ReceiverThread::start() {
   WTLOG(INFO) << threadStats_;
 }
 
-int32_t ReceiverThread::getPort() const {
+int32_t WdtFileThread::getPort() const {
   return socket_->getPort();
 }
 
-ErrorCode ReceiverThread::init() {
+ErrorCode WdtFileThread::init() {
   const EncryptionParams &encryptionData =
       wdtParent_->transferRequest_.encryptionData;
   Func tagVerificationSuccessCallback = [this] {
@@ -1051,7 +1051,7 @@ ErrorCode ReceiverThread::init() {
   return OK;
 }
 
-void ReceiverThread::reset() {
+void WdtFileThread::reset() {
   numRead_ = off_ = 0;
   checkpointIndex_ = pendingCheckpointIndex_ = 0;
   senderReadTimeout_ = senderWriteTimeout_ = -1;
@@ -1062,7 +1062,7 @@ void ReceiverThread::reset() {
   checkpoint_ = Checkpoint(socket_->getPort());
 }
 
-ReceiverThread::~ReceiverThread() {
+WdtFileThread::~WdtFileThread() {
 }
 }  // namespace wdt
 }  // namespace facebook

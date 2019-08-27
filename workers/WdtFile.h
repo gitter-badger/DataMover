@@ -8,7 +8,7 @@
  */
 #pragma once
 
-#include <wdt/ReceiverThread.h>
+#include <wdt/workers/WdtFileThread.h>
 #include <wdt/WdtBase.h>
 #include <wdt/util/FileCreator.h>
 #include <wdt/util/IServerSocket.h>
@@ -21,22 +21,22 @@
 namespace facebook {
 namespace wdt {
 /**
- * Receiver is the receiving side of the transfer. Receiver listens on ports
+ * WdtFile is the receiving side of the transfer. WdtFile listens on ports
  * accepts connections, receives the files and writes to the destination
- * directory. Receiver has two modes of operation : You can spawn a receiver
+ * directory. WdtFile has two modes of operation : You can spawn a receiver
  * for one transfer or alternatively it can also be used in a long running
  * mode where it accepts subsequent transfers and runs in an infinite loop.
  */
-class Receiver : public WdtBase {
+class WdtFile : public WdtBase {
  public:
   /// Constructor using wdt transfer request (@see in WdtBase.h)
-  explicit Receiver(const WdtTransferRequest &transferRequest);
+  explicit WdtFile(const WdtTransferRequest &transferRequest);
 
   /**
    * Constructor with start port, number of ports and directory to write to.
    * If the start port is specified as zero, it auto configures the ports
    */
-  Receiver(int port, int numSockets, const std::string &destDir);
+  WdtFile(int port, int numSockets, const std::string &destDir);
 
   /// Setup before starting (@see WdtBase.h)
   const WdtTransferRequest &init() override;
@@ -68,11 +68,11 @@ class Receiver : public WdtBase {
   /// Returns true if at least one thread has accepted connection
   bool hasNewTransferStarted() const;
 
-  // Different accept modes for the Receiver
+  // Different accept modes for the WdtFile
   enum AcceptMode {
-    ACCEPT_WITH_RETRIES,  // Receiver gives up after max_accept_retries
-    ACCEPT_FOREVER,       // Receiver never gives up
-    STOP_ACCEPTING,       // Receiver stops accepting
+    ACCEPT_WITH_RETRIES,  // WdtFile gives up after max_accept_retries
+    ACCEPT_FOREVER,       // WdtFile never gives up
+    STOP_ACCEPTING,       // WdtFile stops accepting
   };
 
   /// @param acceptMode   acceptMode to use
@@ -103,10 +103,10 @@ class Receiver : public WdtBase {
    * confirmation from wdt sender that the transfer is 'DONE'. Destructor also
    * internally calls finish() for every transfer if finish() wasn't called
    */
-  ~Receiver() override;
+  ~WdtFile() override;
 
  protected:
-  friend class ReceiverThread;
+  friend class WdtFileThread;
 
   /**
    * Traverses root directory and returns discovered file information
