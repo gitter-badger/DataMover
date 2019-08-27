@@ -17,7 +17,7 @@
 namespace facebook {
 namespace wdt {
 
-class SenderThread;
+class FileWdtThread;
 class TransferHistoryController;
 
 enum ProtoNegotiationStatus {
@@ -33,10 +33,10 @@ enum ProtoNegotiationStatus {
  * The object will not be destroyed till the transfer finishes. This
  * class is not thread safe.
  */
-class Sender : public WdtBase {
+class FileWdt : public WdtBase {
  public:
   /// Creates a counter part sender for the receiver according to the details
-  explicit Sender(const WdtTransferRequest &transferRequest);
+  explicit FileWdt(const WdtTransferRequest &transferRequest);
 
   /// Setup before start (@see WdtBase.h)
   const WdtTransferRequest &init() override;
@@ -45,7 +45,7 @@ class Sender : public WdtBase {
    * If the transfer has not finished, then it is aborted. finish() is called to
    * wait for threads to end.
    */
-  ~Sender() override;
+  ~FileWdt() override;
 
   /**
    * Joins on the threads spawned by start. This has to
@@ -108,7 +108,7 @@ class Sender : public WdtBase {
   void setSocketCreator(ISocketCreator *socketCreator);
 
  private:
-  friend class SenderThread;
+  friend class FileWdtThread;
   friend class QueueAbortChecker;
 
   /// Validate the transfer request
@@ -123,7 +123,7 @@ class Sender : public WdtBase {
   /// Returns true if file chunks been received by a thread
   bool isFileChunksReceived();
 
-  /// Sender thread calls this method to set the file chunks info received
+  /// FileWdt thread calls this method to set the file chunks info received
   /// from the receiver
   void setFileChunksInfo(std::vector<FileChunksInfo> &fileChunksInfoList);
 
@@ -131,7 +131,7 @@ class Sender : public WdtBase {
   /// directory discovery thread is also aborted
   class QueueAbortChecker : public IAbortChecker {
    public:
-    explicit QueueAbortChecker(Sender *sender) : sender_(sender) {
+    explicit QueueAbortChecker(FileWdt *sender) : sender_(sender) {
     }
 
     bool shouldAbort() const override {
@@ -139,7 +139,7 @@ class Sender : public WdtBase {
     }
 
    private:
-    Sender *sender_;
+    FileWdt *sender_;
   };
 
   /// Abort checker shared with the directory queue

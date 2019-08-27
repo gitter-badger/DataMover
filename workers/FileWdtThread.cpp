@@ -6,34 +6,34 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
-#include <wdt/SenderThread.h>
+#include <wdt/workers/FileWdtThread.h>
 #include <folly/lang/Bits.h>
 #include <folly/hash/Checksum.h>
 #include <folly/Conv.h>
 #include <folly/Memory.h>
 #include <folly/String.h>
 #include <sys/stat.h>
-#include <wdt/Sender.h>
+#include <wdt/workers/FileWdt.h>
 
 namespace facebook {
 namespace wdt {
 
-std::ostream &operator<<(std::ostream &os, const SenderThread &senderThread) {
+std::ostream &operator<<(std::ostream &os, const FileWdtThread &senderThread) {
   os << "Thread[" << senderThread.threadIndex_
      << ", port: " << senderThread.port_ << "] ";
   return os;
 }
 
-const SenderThread::StateFunction SenderThread::stateMap_[] = {
-    &SenderThread::connect,         &SenderThread::readLocalCheckPoint,
-    &SenderThread::sendSettings,    &SenderThread::sendBlocks,
-    &SenderThread::sendDoneCmd,     &SenderThread::sendSizeCmd,
-    &SenderThread::checkForAbort,   &SenderThread::readFileChunks,
-    &SenderThread::readReceiverCmd, &SenderThread::processDoneCmd,
-    &SenderThread::processWaitCmd,  &SenderThread::processErrCmd,
-    &SenderThread::processAbortCmd, &SenderThread::processVersionMismatch};
+const FileWdtThread::StateFunction FileWdtThread::stateMap_[] = {
+    &FileWdtThread::connect,         &FileWdtThread::readLocalCheckPoint,
+    &FileWdtThread::sendSettings,    &FileWdtThread::sendBlocks,
+    &FileWdtThread::sendDoneCmd,     &FileWdtThread::sendSizeCmd,
+    &FileWdtThread::checkForAbort,   &FileWdtThread::readFileChunks,
+    &FileWdtThread::readReceiverCmd, &FileWdtThread::processDoneCmd,
+    &FileWdtThread::processWaitCmd,  &FileWdtThread::processErrCmd,
+    &FileWdtThread::processAbortCmd, &FileWdtThread::processVersionMismatch};
 
-std::unique_ptr<IClientSocket> SenderThread::connectToReceiver(
+std::unique_ptr<IClientSocket> FileWdtThread::connectToReceiver(
     const int port, IAbortChecker const * /*abortChecker*/,
     ErrorCode &errCode) {
   auto startTime = Clock::now();
@@ -106,7 +106,7 @@ std::unique_ptr<IClientSocket> SenderThread::connectToReceiver(
   return socket;
 }
 
-SenderState SenderThread::connect() {
+FileWdtState FileWdtThread::connect() {
   WTVLOG(1) << "entered CONNECT state";
   if (socket_) {
     ErrorCode socketErrCode = socket_->getNonRetryableErrCode();
@@ -149,7 +149,7 @@ SenderState SenderThread::connect() {
   return nextState;
 }
 
-SenderState SenderThread::readLocalCheckPoint() {
+FileWdtState FileWdtThread::readLocalCheckPoint() {
   WTLOG(INFO) << "entered READ_LOCAL_CHECKPOINT state";
   ThreadTransferHistory &transferHistory = getTransferHistory();
   std::vector<Checkpoint> checkpoints;
@@ -206,7 +206,7 @@ SenderState SenderThread::readLocalCheckPoint() {
   return SEND_SETTINGS;
 }
 
-SenderState SenderThread::sendSettings() {
+FileWdtState FileWdtThread::sendSettings() {
   WTVLOG(1) << "entered SEND_SETTINGS state";
   int64_t readTimeoutMillis = options_.read_timeout_millis;
   int64_t writeTimeoutMillis = options_.write_timeout_millis;
@@ -247,7 +247,7 @@ SenderState SenderThread::sendSettings() {
 
 const int kHeartBeatReadTimeFactor = 10;
 
-ErrorCode SenderThread::readHeartBeats() {
+ErrorCode FileWdtThread::readHeartBeats() {
   if (!enableHeartBeat_) {
     return OK;
   }
@@ -280,7 +280,7 @@ ErrorCode SenderThread::readHeartBeats() {
   return OK;
 }
 
-SenderState SenderThread::sendBlocks() {
+FileWdtState FileWdtThread::sendBlocks() {
   WTVLOG(1) << "entered SEND_BLOCKS state";
   ThreadTransferHistory &transferHistory = getTransferHistory();
   if (threadProtocolVersion_ >= Protocol::RECEIVER_PROGRESS_REPORT_VERSION &&
@@ -314,7 +314,7 @@ SenderState SenderThread::sendBlocks() {
   return SEND_BLOCKS;
 }
 
-TransferStats SenderThread::sendOneByteSource(
+TransferStats FileWdtThread::sendOneByteSource(
     const std::unique_ptr<ByteSource> &source, ErrorCode transferStatus) {
   TransferStats stats;
   char headerBuf[Protocol::kMaxHeader];
@@ -446,7 +446,7 @@ TransferStats SenderThread::sendOneByteSource(
   return stats;
 }
 
-SenderState SenderThread::sendSizeCmd() {
+FileState FileWdtThread::sendSizeCmd() {
   WTVLOG(1) << "entered SEND_SIZE_CMD state";
   int64_t off = 0;
   buf_[off++] = Protocol::SIZE_CMD;
@@ -464,7 +464,7 @@ SenderState SenderThread::sendSizeCmd() {
   return SEND_BLOCKS;
 }
 
-SenderState SenderThread::sendDoneCmd() {
+FIleWdtState WdtFileThread::sendDoneCmd() {
   WTVLOG(1) << "entered SEND_DONE_CMD state";
 
   int64_t off = 0;
@@ -488,7 +488,7 @@ SenderState SenderThread::sendDoneCmd() {
   return READ_RECEIVER_CMD;
 }
 
-SenderState SenderThread::checkForAbort() {
+FileWdtState FileWdtThread::checkForAbort() {
   WTLOG(INFO) << "entered CHECK_FOR_ABORT state";
   auto numRead = socket_->read(buf_, 1);
   if (numRead != 1) {
@@ -504,7 +504,7 @@ SenderState SenderThread::checkForAbort() {
   return PROCESS_ABORT_CMD;
 }
 
-SenderState SenderThread::readFileChunks() {
+FileWdtState FileWdtThread::readFileChunks() {
   WTLOG(INFO) << "entered READ_FILE_CHUNKS state ";
   int64_t numRead = socket_->read(buf_, 1);
   if (numRead != 1) {
@@ -623,7 +623,7 @@ SenderState SenderThread::readFileChunks() {
   return SEND_BLOCKS;
 }
 
-ErrorCode SenderThread::readNextReceiverCmd() {
+ErrorCode FileWdtThread::readNextReceiverCmd() {
   int numUnackedBytes = socket_->getUnackedBytes();
   int timeToClearSendBuffer = 0;
   Clock::time_point startTime = Clock::now();
@@ -683,7 +683,7 @@ ErrorCode SenderThread::readNextReceiverCmd() {
   return OK;
 }
 
-SenderState SenderThread::readReceiverCmd() {
+FileWdtState FileWdtThread::readReceiverCmd() {
   WTVLOG(1) << "entered READ_RECEIVER_CMD state";
 
   ErrorCode errCode = readNextReceiverCmd();
@@ -723,7 +723,7 @@ SenderState SenderThread::readReceiverCmd() {
   return END;
 }
 
-ErrorCode SenderThread::readAndVerifySpuriousCheckpoint() {
+ErrorCode FileWdtThread::readAndVerifySpuriousCheckpoint() {
   int checkpointLen =
       Protocol::getMaxLocalCheckpointLength(threadProtocolVersion_);
   int64_t toRead = checkpointLen - 1;
@@ -757,7 +757,7 @@ ErrorCode SenderThread::readAndVerifySpuriousCheckpoint() {
   return PROTOCOL_ERROR;
 }
 
-SenderState SenderThread::processDoneCmd() {
+FileWdtState FileWdtThread::processDoneCmd() {
   WTVLOG(1) << "entered PROCESS_DONE_CMD state";
   // DONE cmd implies that all the blocks sent till now is acked
   ThreadTransferHistory &transferHistory = getTransferHistory();
@@ -779,7 +779,7 @@ SenderState SenderThread::processDoneCmd() {
   return END;
 }
 
-SenderState SenderThread::processWaitCmd() {
+FileWdtState FileWdtThread::processWaitCmd() {
   WTLOG(INFO) << "entered PROCESS_WAIT_CMD state ";
   // similar to DONE, WAIT also verifies all the blocks
   ThreadTransferHistory &transferHistory = getTransferHistory();
@@ -788,7 +788,7 @@ SenderState SenderThread::processWaitCmd() {
   return READ_RECEIVER_CMD;
 }
 
-SenderState SenderThread::processErrCmd() {
+FileWdtState FileWdtThread::processErrCmd() {
   WTLOG(INFO) << "entered PROCESS_ERR_CMD state";
   // similar to DONE, global checkpoint cmd also verifies all the blocks
   ThreadTransferHistory &transferHistory = getTransferHistory();
@@ -827,7 +827,7 @@ SenderState SenderThread::processErrCmd() {
   return SEND_BLOCKS;
 }
 
-SenderState SenderThread::processAbortCmd() {
+FileWdtState FileWdtThread::processAbortCmd() {
   WTLOG(INFO) << "entered PROCESS_ABORT_CMD state ";
   ThreadTransferHistory &transferHistory = getTransferHistory();
   threadStats_.setLocalErrorCode(ABORT);
@@ -867,7 +867,7 @@ SenderState SenderThread::processAbortCmd() {
   return END;
 }
 
-SenderState SenderThread::processVersionMismatch() {
+FileWdtState FileWdtThread::processVersionMismatch() {
   WTLOG(INFO) << "entered PROCESS_VERSION_MISMATCH state ";
   WDT_CHECK(threadStats_.getLocalErrorCode() == ABORT);
   auto negotiationStatus = wdtParent_->getNegotiationStatus();
@@ -942,7 +942,7 @@ SenderState SenderThread::processVersionMismatch() {
   }
 }
 
-void SenderThread::setFooterType() {
+void FileWdtThread::setFooterType() {
   const int protocolVersion = wdtParent_->getProtocolVersion();
   if (protocolVersion >= Protocol::CHECKSUM_VERSION &&
       options_.enable_checksum) {
@@ -952,7 +952,7 @@ void SenderThread::setFooterType() {
   }
 }
 
-void SenderThread::start() {
+void FileWdtThread::start() {
   Clock::time_point startTime = Clock::now();
 
   if (buf_ == nullptr) {
@@ -964,7 +964,7 @@ void SenderThread::start() {
   setFooterType();
 
   controller_->executeAtStart([&]() { wdtParent_->startNewTransfer(); });
-  SenderState state = CONNECT;
+  FileWdtState state = CONNECT;
 
   while (state != END) {
     ErrorCode abortCode = getThreadAbortCode();
@@ -1001,24 +1001,24 @@ void SenderThread::start() {
   return;
 }
 
-int SenderThread::getPort() const {
+int FileWdtThread::getPort() const {
   return port_;
 }
 
-int SenderThread::getNegotiatedProtocol() const {
+int FileWdtThread::getNegotiatedProtocol() const {
   return negotiatedProtocol_;
 }
 
-ErrorCode SenderThread::init() {
+ErrorCode FileWdtThread::init() {
   return OK;
 }
 
-void SenderThread::reset() {
+void FileWdtThread::reset() {
   totalSizeSent_ = false;
   threadStats_.setLocalErrorCode(OK);
 }
 
-ErrorCode SenderThread::getThreadAbortCode() {
+ErrorCode FileWdtThread::getThreadAbortCode() {
   ErrorCode globalAbortCode = wdtParent_->getCurAbortCode();
   if (globalAbortCode != OK) {
     return globalAbortCode;

@@ -8,7 +8,7 @@
  */
 #pragma once
 #include <folly/Conv.h>
-#include <wdt/Sender.h>
+#include <wdt/workers/FileWdt.h>
 #include <wdt/WdtThread.h>
 #include <wdt/util/IClientSocket.h>
 #include <wdt/util/ThreadTransferHistory.h>
@@ -20,7 +20,7 @@ namespace wdt {
 class DirectorySourceQueue;
 
 /// state machine states
-enum SenderState {
+enum FileWdtState {
   CONNECT,
   READ_LOCAL_CHECKPOINT,
   SEND_SETTINGS,
@@ -45,7 +45,7 @@ enum SenderState {
  * All the sender threads share bunch of modules like directory queue,
  * throttler, threads controller etc
  */
-class SenderThread : public WdtThread {
+class FileWdtThread : public WdtThread {
  public:
   /// Identifers for the barriers used in the thread
   enum SENDER_BARRIERS { VERSION_MISMATCH_BARRIER, NUM_BARRIERS };
@@ -60,7 +60,7 @@ class SenderThread : public WdtThread {
   /// abort and whether global checkpoint has been received or not
   class SocketAbortChecker : public IAbortChecker {
    public:
-    explicit SocketAbortChecker(SenderThread *threadPtr)
+    explicit SocketAbortChecker(FIleWdtThread *threadPtr)
         : threadPtr_(threadPtr) {
     }
 
@@ -69,11 +69,11 @@ class SenderThread : public WdtThread {
     }
 
    private:
-    SenderThread *threadPtr_{nullptr};
+    FileWdtThread *threadPtr_{nullptr};
   };
 
   /// Constructor for the sender thread
-  SenderThread(Sender *sender, int threadIndex, int32_t port,
+  FileWdtThread(FileWdt *sender, int threadIndex, int32_t port,
                ThreadsController *threadsController)
       : WdtThread(sender->options_, threadIndex, port,
                   sender->getProtocolVersion(), threadsController),
@@ -88,7 +88,7 @@ class SenderThread : public WdtThread {
     isTty_ = isatty(STDERR_FILENO);
   }
 
-  typedef SenderState (SenderThread::*StateFunction)();
+  typedef FileWdtState (FileWdtThread::*StateFunction)();
 
   /// Returns the neogtiated protocol
   int getNegotiatedProtocol() const override;
@@ -107,16 +107,16 @@ class SenderThread : public WdtThread {
   ErrorCode getThreadAbortCode();
 
   /// Destructor of the sender thread
-  ~SenderThread() override {
+  ~FileWdtThread() override {
   }
 
  private:
   /// Overloaded operator for printing thread info
   friend std::ostream &operator<<(std::ostream &os,
-                                  const SenderThread &senderThread);
+                                  const FileWdtThread &senderThread);
 
   /// Parent shared among all the threads for meta information
-  Sender *wdtParent_;
+  FileWdt *wdtParent_;
 
   /// sets the correct footer type depending on the checksum and encryption type
   void setFooterType();
@@ -137,7 +137,7 @@ class SenderThread : public WdtThread {
    *               READ_LOCAL_CHECKPOINT(if there is previous error)
    *               END(failed)
    */
-  SenderState connect();
+  FileWdtState connect();
   /**
    * tries to read local checkpoint and return unacked sources to queue. If the
    * checkpoint value is -1, then we know previous attempt to send DONE had
@@ -148,7 +148,7 @@ class SenderThread : public WdtThread {
    *               READ_RECEIVER_CMD(if checkpoint is -1),
    *               SEND_SETTINGS(success)
    */
-  SenderState readLocalCheckPoint();
+  FileWdtState readLocalCheckPoint();
   /**
    * sends sender settings to the receiver
    * Previous states : READ_LOCAL_CHECKPOINT,
@@ -156,7 +156,7 @@ class SenderThread : public WdtThread {
    * Next states : SEND_BLOCKS(success),
    *               CONNECT(failure)
    */
-  SenderState sendSettings();
+  FileWdtState sendSettings();
   /**
    * sends blocks to receiver till the queue is not empty. After transferring a
    * block, we add it to the history. While adding to history, if it is found
@@ -169,21 +169,21 @@ class SenderThread : public WdtThread {
    *               CHECK_FOR_ABORT(socket write failure),
    *               SEND_DONE_CMD(no more blocks left to transfer)
    */
-  SenderState sendBlocks();
+  FileWdtState sendBlocks();
   /**
    * sends DONE cmd to the receiver
    * Previous states : SEND_BLOCKS
    * Next states : CONNECT(failure),
    *               READ_RECEIVER_CMD(success)
    */
-  SenderState sendDoneCmd();
+  FileWdtState sendDoneCmd();
   /**
    * sends size cmd to the receiver
    * Previous states : SEND_BLOCKS
    * Next states : CHECK_FOR_ABORT(failure),
    *               SEND_BLOCKS(success)
    */
-  SenderState sendSizeCmd();
+  FileWdtState sendSizeCmd();
   /**
    * checks to see if the receiver has sent ABORT or not
    * Previous states : SEND_BLOCKS,
@@ -192,7 +192,7 @@ class SenderThread : public WdtThread {
    *               END(protocol error),
    *               PROCESS_ABORT_CMD(read ABORT cmd)
    */
-  SenderState checkForAbort();
+  FileWdtState checkForAbort();
   /**
    * reads previously transferred file chunks list. If it receives an ACK cmd,
    * then it moves on. If wait cmd is received, it waits. Otherwise reads the
@@ -204,7 +204,7 @@ class SenderThread : public WdtThread {
    *              SEND_BLOCKS(success)
    *
    */
-  SenderState readFileChunks();
+  FileWdtState readFileChunks();
   /**
    * reads receiver cmd
    * Previous states : SEND_DONE_CMD
@@ -214,19 +214,19 @@ class SenderThread : public WdtThread {
    *               END(protocol error),
    *               CONNECT(failure)
    */
-  SenderState readReceiverCmd();
+  FileWdtState readReceiverCmd();
   /**
    * handles DONE cmd
    * Previous states : READ_RECEIVER_CMD
    * Next states : END
    */
-  SenderState processDoneCmd();
+  FileWdtState processDoneCmd();
   /**
    * handles WAIT cmd
    * Previous states : READ_RECEIVER_CMD
    * Next states : READ_RECEIVER_CMD
    */
-  SenderState processWaitCmd();
+  FileWdtState processWaitCmd();
   /**
    * reads list of global checkpoints and returns unacked sources to queue.
    * Previous states : READ_RECEIVER_CMD
@@ -234,14 +234,14 @@ class SenderThread : public WdtThread {
    *               END(checkpoint list decode failure),
    *               SEND_BLOCKS(success)
    */
-  SenderState processErrCmd();
+  FileWdtState processErrCmd();
   /**
    * processes ABORT cmd
    * Previous states : CHECK_FOR_ABORT,
    *                   READ_RECEIVER_CMD
    * Next states : END
    */
-  SenderState processAbortCmd();
+  FileWdtState processAbortCmd();
 
   /**
    * waits for all active threads to be aborted, checks to see if the abort was
@@ -252,7 +252,7 @@ class SenderThread : public WdtThread {
    *               END(if abort was not due to version mismatch or some sanity
    *               check failed)
    */
-  SenderState processVersionMismatch();
+  FileWdtState processVersionMismatch();
 
   /**
    * Reads next receiver cmd. If the read times out, checks to see if the tcp

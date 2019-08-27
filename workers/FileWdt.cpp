@@ -6,9 +6,9 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
-#include <wdt/Sender.h>
+#include <wdt/workers/FileWdt.h>
 
-#include <wdt/SenderThread.h>
+#include <wdt/workers/FileWdtThread.h>
 #include <wdt/Throttler.h>
 
 #include <wdt/util/ClientSocket.h>
@@ -23,7 +23,7 @@
 namespace facebook {
 namespace wdt {
 
-void Sender::endCurTransfer() {
+void FileWdt::endCurTransfer() {
   endTime_ = Clock::now();
   WLOG(INFO) << "Last thread finished "
              << durationSeconds(endTime_ - startTime_) << " for transfer id "
@@ -34,7 +34,7 @@ void Sender::endCurTransfer() {
   }
 }
 
-void Sender::startNewTransfer() {
+void FileWdt::startNewTransfer() {
   if (throttler_) {
     throttler_->startTransfer();
   }
@@ -42,19 +42,19 @@ void Sender::startNewTransfer() {
              << transferRequest_.hostName;
 }
 
-Sender::Sender(const WdtTransferRequest &transferRequest)
+FileWdt::FileWdt(const WdtTransferRequest &transferRequest)
     : queueAbortChecker_(this) {
-  WLOG(INFO) << "WDT Sender " << Protocol::getFullVersion();
+  WLOG(INFO) << "FileWdt " << Protocol::getFullVersion();
   transferRequest_ = transferRequest;
 
   progressReportIntervalMillis_ = options_.progress_report_interval_millis;
 
   if (getTransferId().empty()) {
-    WLOG(WARNING) << "Sender without transferId... will likely fail to connect";
+    WLOG(WARNING) << "FIleWdt without transferId... will likely fail to connect";
   }
 }
 
-ErrorCode Sender::validateTransferRequest() {
+ErrorCode FileWdt::validateTransferRequest() {
   ErrorCode code = WdtBase::validateTransferRequest();
   // If the request is still valid check for other
   // sender specific validations
@@ -67,8 +67,8 @@ ErrorCode Sender::validateTransferRequest() {
   return code;
 }
 
-const WdtTransferRequest &Sender::init() {
-  WVLOG(1) << "Sender Init() with encryption set = "
+const WdtTransferRequest &FileWdt::init() {
+  WVLOG(1) << "FileWdt Init() with encryption set = "
            << transferRequest_.encryptionData.isSet();
   negotiateProtocol();
   if (validateTransferRequest() != OK) {
@@ -85,25 +85,25 @@ const WdtTransferRequest &Sender::init() {
   return transferRequest_;
 }
 
-Sender::~Sender() {
+FileWdt::~FileWdt() {
   TransferStatus status = getTransferStatus();
   if (status == ONGOING) {
-    WLOG(WARNING) << "Sender being deleted. Forcefully aborting the transfer";
+    WLOG(WARNING) << "FieWdt being deleted. Forcefully aborting the transfer";
     abort(ABORTED_BY_APPLICATION);
   }
   finish();
 }
 
-void Sender::setProgressReportIntervalMillis(
+void FileWdt::setProgressReportIntervalMillis(
     const int progressReportIntervalMillis) {
   progressReportIntervalMillis_ = progressReportIntervalMillis;
 }
 
-ProtoNegotiationStatus Sender::getNegotiationStatus() {
+ProtoNegotiationStatus FileWdt::getNegotiationStatus() {
   return protoNegotiationStatus_;
 }
 
-std::vector<int> Sender::getNegotiatedProtocols() const {
+std::vector<int> FileWdt::getNegotiatedProtocols() const {
   std::vector<int> ret;
   for (const auto &senderThread : senderThreads_) {
     ret.push_back(senderThread->getNegotiatedProtocol());
@@ -111,21 +111,21 @@ std::vector<int> Sender::getNegotiatedProtocols() const {
   return ret;
 }
 
-void Sender::setProtoNegotiationStatus(ProtoNegotiationStatus status) {
+void FileWdt::setProtoNegotiationStatus(ProtoNegotiationStatus status) {
   protoNegotiationStatus_ = status;
 }
 
-bool Sender::isSendFileChunks() const {
+bool FileWdt::isSendFileChunks() const {
   return (downloadResumptionEnabled_ &&
           getProtocolVersion() >= Protocol::DOWNLOAD_RESUMPTION_VERSION);
 }
 
-bool Sender::isFileChunksReceived() {
+bool FileWdt::isFileChunksReceived() {
   std::lock_guard<std::mutex> lock(mutex_);
   return fileChunksReceived_;
 }
 
-void Sender::setFileChunksInfo(
+void FileWdt::setFileChunksInfo(
     std::vector<FileChunksInfo> &fileChunksInfoList) {
   std::lock_guard<std::mutex> lock(mutex_);
   if (fileChunksReceived_) {
@@ -136,11 +136,11 @@ void Sender::setFileChunksInfo(
   fileChunksReceived_ = true;
 }
 
-const std::string &Sender::getDestination() const {
+const std::string &FileWdt::getDestination() const {
   return transferRequest_.hostName;
 }
 
-std::unique_ptr<TransferReport> Sender::getTransferReport() {
+std::unique_ptr<TransferReport> FileWdt::getTransferReport() {
   int64_t totalFileSize = 0;
   int64_t fileCount = 0;
   bool fileDiscoveryFinished = false;
@@ -164,11 +164,11 @@ std::unique_ptr<TransferReport> Sender::getTransferReport() {
   return transferReport;
 }
 
-Clock::time_point Sender::getEndTime() {
+Clock::time_point FileWdt::getEndTime() {
   return endTime_;
 }
 
-TransferStats Sender::getGlobalTransferStats() const {
+TransferStats FileWdt::getGlobalTransferStats() const {
   TransferStats globalStats;
   for (const auto &thread : senderThreads_) {
     globalStats += thread->getTransferStats();
@@ -176,9 +176,9 @@ TransferStats Sender::getGlobalTransferStats() const {
   return globalStats;
 }
 
-std::unique_ptr<TransferReport> Sender::finish() {
+std::unique_ptr<TransferReport> FileWdt::finish() {
   std::unique_lock<std::mutex> instanceLock(instanceManagementMutex_);
-  WVLOG(1) << "Sender::finish()";
+  WVLOG(1) << "FileWdt::finish()";
   TransferStatus status = getTransferStatus();
   if (status == NOT_STARTED) {
     WLOG(WARNING) << "Even though transfer has not started, finish is called";
@@ -268,16 +268,16 @@ std::unique_ptr<TransferReport> Sender::finish() {
   return transferReport;
 }
 
-ErrorCode Sender::transferAsync() {
+ErrorCode FileWdt::transferAsync() {
   return start();
 }
 
-std::unique_ptr<TransferReport> Sender::transfer() {
+std::unique_ptr<TransferReport> FileWdt::transfer() {
   start();
   return finish();
 }
 
-ErrorCode Sender::start() {
+ErrorCode FileWdt::start() {
   {
     std::lock_guard<std::mutex> lock(mutex_);
     if (transferStatus_ != NOT_STARTED) {
@@ -328,11 +328,11 @@ ErrorCode Sender::start() {
     configureThrottler();
   }
   threadsController_ = new ThreadsController(transferRequest_.ports.size());
-  threadsController_->setNumBarriers(SenderThread::NUM_BARRIERS);
-  threadsController_->setNumFunnels(SenderThread::NUM_FUNNELS);
-  threadsController_->setNumConditions(SenderThread::NUM_CONDITIONS);
+  threadsController_->setNumBarriers(FileWdtThread::NUM_BARRIERS);
+  threadsController_->setNumFunnels(FileWdtThread::NUM_FUNNELS);
+  threadsController_->setNumConditions(FileWdtThread::NUM_CONDITIONS);
   // TODO: fix this ! use transferRequest! (and dup from Receiver)
-  senderThreads_ = threadsController_->makeThreads<Sender, SenderThread>(
+  senderThreads_ = threadsController_->makeThreads<FileWdt, FileWdtThread>(
       this, transferRequest_.ports.size(), transferRequest_.ports);
   if (downloadResumptionEnabled_ && deleteExtraFiles) {
     if (getProtocolVersion() >= Protocol::DELETE_CMD_VERSION) {
@@ -352,13 +352,13 @@ ErrorCode Sender::start() {
   }
   if (progressReportEnabled) {
     progressReporter_->start();
-    std::thread reporterThread(&Sender::reportProgress, this);
+    std::thread reporterThread(&FileWdt::reportProgress, this);
     progressReporterThread_ = std::move(reporterThread);
   }
   return OK;
 }
 
-void Sender::validateTransferStats(
+void FileWdt::validateTransferStats(
     const std::vector<TransferStats> &transferredSourceStats,
     const std::vector<TransferStats> &failedSourceStats) {
   int64_t sourceFailedAttempts = 0;
@@ -397,11 +397,11 @@ void Sender::validateTransferStats(
   WDT_CHECK(sourceNumBlocks == threadNumBlocks);
 }
 
-void Sender::setSocketCreator(Sender::ISocketCreator *socketCreator) {
+void FileWdt::setSocketCreator(FileWdt::ISocketCreator *socketCreator) {
   socketCreator_ = socketCreator;
 }
 
-void Sender::reportProgress() {
+void FileWdt::reportProgress() {
   WDT_CHECK(progressReportIntervalMillis_ > 0);
   int throughputUpdateIntervalMillis =
       options_.throughput_update_interval_millis;
@@ -447,7 +447,7 @@ void Sender::reportProgress() {
   }
 }
 
-void Sender::logPerfStats() const {
+void FileWdt::logPerfStats() const {
   if (!options_.enable_perf_stat_collection) {
     return;
   }
