@@ -7,7 +7,6 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  */
 #include <wdt/workers/FileWdt.h>
-
 #include <wdt/workers/FileWdtThread.h>
 #include <wdt/Throttler.h>
 
@@ -94,6 +93,7 @@ FileWdt::~FileWdt() {
   finish();
 }
 
+// FIXME Move to parent???
 void FileWdt::setProgressReportIntervalMillis(
     const int progressReportIntervalMillis) {
   progressReportIntervalMillis_ = progressReportIntervalMillis;

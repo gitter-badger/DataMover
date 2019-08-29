@@ -70,7 +70,7 @@ ErrorCode WdtNamespaceController::createReceiver(
     if (!hasReceiverQuota()) {
       return QUOTA_EXCEEDED;
     }
-    receiver = make_shared<Receiver>(request);
+    receiver = make_shared<WdtFile>(request);
     receiver->setThrottler(parent_->getWdtThrottler());
     receiver->setWdtOptions(parent_->getOptions());
     receiversMap_[identifier] = receiver;
@@ -107,7 +107,7 @@ ErrorCode WdtNamespaceController::createSender(
     if (!hasSenderQuota()) {
       return QUOTA_EXCEEDED;
     }
-    sender = make_shared<Sender>(request);
+    sender = make_shared<FileWdt>(request);
     sender->setThrottler(parent_->getWdtThrottler());
     sender->setWdtOptions(parent_->getOptions());
     sendersMap_[identifier] = sender;

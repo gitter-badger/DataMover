@@ -90,13 +90,13 @@ util/FileCreator.cpp
 Protocol.cpp
 WdtThread.cpp
 util/ThreadsController.cpp
-ReceiverThread.cpp
-Receiver.cpp
+workers/WdtFileThread.cpp
+workers/WdtFile.cpp
 WdtTransferRequest.cpp
 Reporting.cpp
 util/ThreadTransferHistory.cpp
 workers/FileWdtThread.cpp
-workers/FIleWdt.cpp
+workers/FileWdt.cpp
 util/ServerSocket.cpp
 Throttler.cpp
 WdtOptions.cpp
@@ -237,6 +237,9 @@ endforeach()
 # Install the .h files in the util with directory structure maintained
 
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/util" DESTINATION include/wdt
+        FILES_MATCHING PATTERN "*.h")
+
+install(DIRECTORY "${PROJECT_SOURCE_DIR}/workers" DESTINATION include/wdt
         FILES_MATCHING PATTERN "*.h")
 
 # wcp script

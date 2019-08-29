@@ -60,7 +60,7 @@ class FileWdtThread : public WdtThread {
   /// abort and whether global checkpoint has been received or not
   class SocketAbortChecker : public IAbortChecker {
    public:
-    explicit SocketAbortChecker(FIleWdtThread *threadPtr)
+    explicit SocketAbortChecker(FileWdtThread *threadPtr)
         : threadPtr_(threadPtr) {
     }
 

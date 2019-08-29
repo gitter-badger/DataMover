@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
-#include <wdt/Receiver.h>
+#include <wdt/workers/WdtFile.h>
 #include <wdt/Wdt.h>
 #include <wdt/WdtResourceController.h>
 
@@ -299,7 +299,7 @@ int main(int argc, char *argv[]) {
     reqPtr->hostName = FLAGS_hostname;
   }
   if (FLAGS_destination.empty() && connectUrl.empty()) {
-    Receiver receiver(req);
+    WdtFile receiver(req);
     WdtOptions &recOptions = receiver.getWdtOptions();
     if (FLAGS_run_as_daemon) {
       // Backward compatible with static ports, you can still get dynamic

@@ -7,7 +7,7 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  */
 #pragma once
-#include <wdt/Receiver.h>
+#include <wdt/workers/WdtFile.h>
 #include <wdt/WdtBase.h>
 #include <wdt/WdtThread.h>
 #include <wdt/util/ServerSocket.h>
@@ -15,14 +15,14 @@
 namespace facebook {
 namespace wdt {
 
-class Receiver;
+class WdtFile;
 /**
  * Wdt receiver has logic to maintain the consistency of the
  * transfers through connection errors. All threads are run by the logic
  * defined as a state machine. These are the all the states in that
  * state machine
  */
-enum ReceiverState {
+enum WdtFileState {
   LISTEN,
   ACCEPT_FIRST_CONNECTION,
   ACCEPT_WITH_TIMEOUT,
@@ -47,7 +47,7 @@ enum ReceiverState {
  * receive data from the wdt sender. All the receiver threads
  * share modules like threads controller, throttler etc
  */
-class ReceiverThread : public WdtThread {
+class WdtFileThread : public WdtThread {
  public:
   /// Identifiers for the funnels that this thread will use
   enum RECEIVER_FUNNELS { SEND_FILE_CHUNKS_FUNNEL, NUM_FUNNELS };
@@ -67,7 +67,7 @@ class ReceiverThread : public WdtThread {
    *                        receiver threads. All the receiver thread objects
    *                        need to share the same instance of the controller
    */
-  ReceiverThread(Receiver *wdtParent, int threadIndex, int port,
+  WdtFileThread(WdtFile *wdtParent, int threadIndex, int port,
                  ThreadsController *controller);
 
   /// Initializes the receiver thread before starting
@@ -79,8 +79,8 @@ class ReceiverThread : public WdtThread {
    */
   void reset() override;
 
-  /// Destructor of Receiver thread
-  ~ReceiverThread() override;
+  /// Destructor of WdtFile thread
+  ~WdtFileThread() override;
 
   /// Get the port this receiver thread is listening on
   int32_t getPort() const override;
@@ -88,11 +88,11 @@ class ReceiverThread : public WdtThread {
  private:
   /// Overloaded operator for printing thread info
   friend std::ostream &operator<<(std::ostream &os,
-                                  const ReceiverThread &receiverThread);
-  typedef ReceiverState (ReceiverThread::*StateFunction)();
+                                  const WdtFileThread &receiverThread);
+  typedef WdtFileState (WdtFileThread::*StateFunction)();
 
   /// Parent shared among all the threads for meta information
-  Receiver *wdtParent_;
+  WdtFile *wdtParent_;
 
   /**
    * Tries to listen/bind to port. If this fails, thread is considered failed.
@@ -100,7 +100,7 @@ class ReceiverThread : public WdtThread {
    * Next states : ACCEPT_FIRST_CONNECTION(success),
    *               FINISH_WITH_ERROR(failure)
    */
-  ReceiverState listen();
+  WdtFileState listen();
 
   /**
    * Tries to accept first connection of a new session. Periodically checks
@@ -116,7 +116,7 @@ class ReceiverThread : public WdtThread {
    *               connection in specified number of retries),
    *               READ_NEXT_CMD(if a connection was received)
    */
-  ReceiverState acceptFirstConnection();
+  WdtFileState acceptFirstConnection();
 
   /**
    * Tries to accept a connection with timeout. There are 2 kinds of timeout. At
@@ -135,7 +135,7 @@ class ReceiverThread : public WdtThread {
    *               session variables),
    *               END(if accept fails otherwise)
    */
-  ReceiverState acceptWithTimeout();
+  WdtFileState acceptWithTimeout();
   /**
    * Sends local checkpoint to the sender. In case of previous error during
    * SEND_LOCAL_CHECKPOINT state, we send -1 as the checkpoint.
@@ -145,7 +145,7 @@ class ReceiverThread : public WdtThread {
    *               SEND_DONE_CMD error),
    *               READ_NEXT_CMD(if send is successful otherwise)
    */
-  ReceiverState sendLocalCheckpoint();
+  WdtFileState sendLocalCheckpoint();
   /**
    * Reads next cmd and transitions to the state accordingly.
    * Previous states : SEND_LOCAL_CHECKPOINT,
@@ -161,7 +161,7 @@ class ReceiverThread : public WdtThread {
    *               ACCEPT_WITH_TIMEOUT(in case of read failure),
    *               FINISH_WITH_ERROR(in case of protocol errors)
    */
-  ReceiverState readNextCmd();
+  WdtFileState readNextCmd();
   /**
    * Processes file cmd. Logic of how we write the file to the destination
    * directory is defined here.
@@ -170,7 +170,7 @@ class ReceiverThread : public WdtThread {
    *               FINISH_WITH_ERROR(protocol error),
    *               ACCEPT_WITH_TIMEOUT(socket read failure)
    */
-  ReceiverState processFileCmd();
+  WdtFileState processFileCmd();
   /**
    * Processes settings cmd. Settings has a connection settings,
    * protocol version, transfer id, etc. For more info check Protocol.h
@@ -180,7 +180,7 @@ class ReceiverThread : public WdtThread {
    *               ACCEPT_WITH_TIMEOUT(socket read failure),
    *               SEND_FILE_CHUNKS(If the sender wants to resume transfer)
    */
-  ReceiverState processSettingsCmd();
+  WdtFileState processSettingsCmd();
   /**
    * Processes done cmd. Also checks to see if there are any new global
    * checkpoints or not
@@ -189,14 +189,14 @@ class ReceiverThread : public WdtThread {
    *               WAIT_FOR_FINISH_OR_NEW_CHECKPOINT(success),
    *               SEND_GLOBAL_CHECKPOINTS(if there are global errors)
    */
-  ReceiverState processDoneCmd();
+  WdtFileState processDoneCmd();
   /**
    * Processes size cmd. Sets the value of totalSenderBytes_
    * Previous states : READ_NEXT_CMD,
    * Next states : READ_NEXT_CMD(success),
    *               FINISH_WITH_ERROR(protocol error)
    */
-  ReceiverState processSizeCmd();
+  WdtFileState processSizeCmd();
   /**
    * Sends file chunks that were received successfully in any previous transfer,
    * this is the first step in download resumption.
@@ -208,7 +208,7 @@ class ReceiverThread : public WdtThread {
    * Next states : ACCEPT_WITH_TIMEOUT(network error),
    *               READ_NEXT_CMD(success)
    */
-  ReceiverState sendFileChunks();
+  WdtFileState sendFileChunks();
   /**
    * Sends global checkpoints to sender
    * Previous states : PROCESS_DONE_CMD,
@@ -216,7 +216,7 @@ class ReceiverThread : public WdtThread {
    * Next states : READ_NEXT_CMD(success),
    *               ACCEPT_WITH_TIMEOUT(socket write failure)
    */
-  ReceiverState sendGlobalCheckpoint();
+  WdtFileState sendGlobalCheckpoint();
   /**
    * Sends DONE to sender, also tries to read back ack. If anything fails during
    * this state, doneSendFailure_ thread variable is set. This flag makes the
@@ -227,14 +227,14 @@ class ReceiverThread : public WdtThread {
    * Next states : END(success),
    *               ACCEPT_WITH_TIMEOUT(failure)
    */
-  ReceiverState sendDoneCmd();
+  WdtFileState sendDoneCmd();
 
   /**
    * Sends ABORT cmd back to the sender
    * Previous states : PROCESS_FILE_CMD
    * Next states : FINISH_WITH_ERROR
    */
-  ReceiverState sendAbortCmd();
+  WdtFileState sendAbortCmd();
 
   /**
    * Internal implementation of waitForFinishOrNewCheckpoint
@@ -244,7 +244,7 @@ class ReceiverThread : public WdtThread {
    *  there are no active threads
    *  WAIT_FOR_FINISH_OR_NEW_CHECKPOINT in all other cases
    */
-  ReceiverState checkForFinishOrNewCheckpoints();
+  WdtFileState checkForFinishOrNewCheckpoints();
 
   /**
    * Waits for transfer to finish or new checkpoints. This state first
@@ -257,7 +257,7 @@ class ReceiverThread : public WdtThread {
    *               SEND_GLOBAL_CHECKPOINTS(if new checkpoints are found),
    *               ACCEPT_WITH_TIMEOUT(if socket write fails)
    */
-  ReceiverState waitForFinishOrNewCheckpoint();
+  WdtFileState waitForFinishOrNewCheckpoint();
 
   /**
    * Waits for transfer to finish. Only called when there is an error for the
@@ -267,7 +267,7 @@ class ReceiverThread : public WdtThread {
    * Previous states : Almost all states
    * Next states : END
    */
-  ReceiverState finishWithError();
+  WdtFileState finishWithError();
 
   /// marks a block a verified
   void markBlockVerified(const BlockDetails &blockDetails);

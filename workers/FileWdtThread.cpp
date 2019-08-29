@@ -7,13 +7,13 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  */
 #include <wdt/workers/FileWdtThread.h>
+#include <wdt/workers/FileWdt.h>
 #include <folly/lang/Bits.h>
 #include <folly/hash/Checksum.h>
 #include <folly/Conv.h>
 #include <folly/Memory.h>
 #include <folly/String.h>
 #include <sys/stat.h>
-#include <wdt/workers/FileWdt.h>
 
 namespace facebook {
 namespace wdt {
@@ -446,7 +446,7 @@ TransferStats FileWdtThread::sendOneByteSource(
   return stats;
 }
 
-FileState FileWdtThread::sendSizeCmd() {
+FileWdtState FileWdtThread::sendSizeCmd() {
   WTVLOG(1) << "entered SEND_SIZE_CMD state";
   int64_t off = 0;
   buf_[off++] = Protocol::SIZE_CMD;
@@ -464,7 +464,7 @@ FileState FileWdtThread::sendSizeCmd() {
   return SEND_BLOCKS;
 }
 
-FIleWdtState WdtFileThread::sendDoneCmd() {
+FileWdtState FileWdtThread::sendDoneCmd() {
   WTVLOG(1) << "entered SEND_DONE_CMD state";
 
   int64_t off = 0;

@@ -8,8 +8,8 @@
  */
 #pragma once
 
-#include <wdt/Receiver.h>
-#include <wdt/Sender.h>
+#include <wdt/workers/WdtFile.h>
+#include <wdt/workers/FileWdt.h>
 // For Options
 #include <wdt/WdtOptions.h>
 // For ErrorCode
@@ -114,7 +114,7 @@ class Wdt {
   /// @return  sender identifier for a transfer request
   static std::string getSenderIdentifier(const WdtTransferRequest &req);
 
-  virtual void wdtSetReceiverSocketCreator(Receiver &/* unused */) {}
+  virtual void wdtSetReceiverSocketCreator(WdtFile &/* unused */) {}
 
   /// Virtual Destructor (for class hierarchy)
   virtual ~Wdt() {

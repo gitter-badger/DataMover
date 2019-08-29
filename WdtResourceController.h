@@ -8,16 +8,16 @@
  */
 #pragma once
 #include <wdt/ErrorCodes.h>
-#include <wdt/Receiver.h>
-#include <wdt/Sender.h>
+#include <wdt/workers/WdtFile.h>
+#include <wdt/workers/FileWdt.h>
 #include <unordered_map>
 #include <vector>
 
 namespace facebook {
 namespace wdt {
 
-typedef std::shared_ptr<Receiver> ReceiverPtr;
-typedef std::shared_ptr<Sender> SenderPtr;
+typedef std::shared_ptr<WdtFile> ReceiverPtr;
+typedef std::shared_ptr<FileWdt> SenderPtr;
 
 /**
  * Base class for both wdt global and namespace controller
