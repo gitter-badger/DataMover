@@ -2,7 +2,7 @@
 #pragma once
 
 #include <wdt/WdtBase.h>
-#include <wdt/util/ClientSocket.h>
+#include <wdt/util/FileCreator.h>
 #include <chrono>
 #include <iostream>
 #include <memory>
@@ -10,12 +10,14 @@
 namespace facebook {
 namespace wdt {
 
-class FileWdtThread;
+class FileFileThread;
 class TransferHistoryController;
 
 class FileFile : public WdtBase {
  public:
   explicit FileFile(const WdtTransferRequest &transferRequest);
+
+  FileFile(int port, int numSockets, const std::string &destDir);
 
   const WdtTransferRequest &init() override;
 
@@ -46,7 +48,7 @@ class FileFile : public WdtBase {
 
   bool isFileChunksReceived();
 
-  /// FileWdt thread calls this method to set the file chunks info received
+  /// FileFile thread calls this method to set the file chunks info received
   /// from the receiver
   void setFileChunksInfo(std::vector<FileChunksInfo> &fileChunksInfoList);
 
@@ -73,6 +75,8 @@ class FileFile : public WdtBase {
   QueueAbortChecker queueAbortChecker_;
 
   ErrorCode start();
+
+  void endCurGlobalSession();
 
   void validateTransferStats(
       const std::vector<TransferStats> &transferredSourceStats,
@@ -117,6 +121,14 @@ class FileFile : public WdtBase {
   std::chrono::time_point<Clock> endTime_;
 
   std::unique_ptr<TransferHistoryController> transferHistoryController_;
+
+  void addCheckpoint(Checkpoint checkpoint);
+
+  std::vector<Checkpoint> checkpoints_;
+
+  std::atomic<bool> hasNewTransferStarted_{false};
+
+};
 
 }
 }  // namespace facebook::wdt

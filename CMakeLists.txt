@@ -92,6 +92,8 @@ WdtThread.cpp
 util/ThreadsController.cpp
 workers/WdtFileThread.cpp
 workers/WdtFile.cpp
+workers/FileFileThread.cpp
+workers/FileFile.cpp
 WdtTransferRequest.cpp
 Reporting.cpp
 util/ThreadTransferHistory.cpp

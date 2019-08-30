@@ -1,9 +1,9 @@
 
 #pragma once
 #include <folly/Conv.h>
-#include <wdt/workers/FileWdt.h>
+#include <wdt/workers/FileFile.h>
+#include <wdt/WdtBase.h>
 #include <wdt/WdtThread.h>
-#include <wdt/util/IClientSocket.h>
 #include <wdt/util/ThreadTransferHistory.h>
 #include <thread>
 
@@ -14,7 +14,6 @@ class DirectorySourceQueue;
 
 /// state machine states
 enum FileFileState {
-  INIT,
   COPY_FILE_CHUNK,
   CHECK_FOR_ABORT,
   FINISH_WITH_ERROR,
@@ -24,9 +23,18 @@ enum FileFileState {
 class FileFileThread : public WdtThread {
  public:
 
-  class SocketAbortChecker : public IAbortChecker {
+  /// Identifiers for the barriers used in the thread
+  enum SENDER_BARRIERS { VERSION_MISMATCH_BARRIER, NUM_BARRIERS };
+
+  /// Identifiers for the funnels used in the thread
+  enum SENDER_FUNNELS { VERSION_MISMATCH_FUNNEL, NUM_FUNNELS };
+
+  /// Identifier for the condition wrappers used in the thread
+  enum SENDER_CONDITIONS { NUM_CONDITIONS };
+
+  class FileAbortChecker : public IAbortChecker {
    public:
-    explicit SocketAbortChecker(FileFileThread *threadPtr)
+    explicit FileAbortChecker(FileFileThread *threadPtr)
         : threadPtr_(threadPtr) {
     }
 
@@ -38,9 +46,7 @@ class FileFileThread : public WdtThread {
     FileFileThread *threadPtr_{nullptr};
   };
 
-  FileFileThread(
-            FileFile *worker,
-            int threadIndex,
+  FileFileThread( FileFile *worker, int threadIndex, int32_t port,
             ThreadsController *threadsController)
       : WdtThread(
             worker->options_, threadIndex, port,
@@ -52,14 +58,26 @@ class FileFileThread : public WdtThread {
 
     controller_->registerThread(threadIndex_);
     transferHistoryController_->addThreadHistory(port_, threadStats_);
-    threadAbortChecker_ = std::make_unique<SocketAbortChecker>(this);
+    threadAbortChecker_ = std::make_unique<FileAbortChecker>(this);
     threadCtx_->setAbortChecker(threadAbortChecker_.get());
     threadStats_.setId(folly::to<std::string>(threadIndex_));
     isTty_ = isatty(STDERR_FILENO);
   }
 
-  ~FileWdtThread() override {
+  ~FileFileThread() override {
   }
+
+  FileFileState copyFileChunk();
+
+  FileFileState finishWithError();
+
+  TransferStats copyOneByteSource();
+  TransferStats copyOneByteSource(const std::unique_ptr<ByteSource> &source,
+                                  ErrorCode transferStatus);
+
+  int64_t numRead_{0};
+  int64_t off_{0};
+  int64_t oldOffset_{0};
 
   typedef FileFileState (FileFileThread::*StateFunction)();
 
@@ -72,7 +90,7 @@ class FileFileThread : public WdtThread {
  private:
   /// Overloaded operator for printing thread info
   friend std::ostream &operator<<(std::ostream &os,
-                                  const FileWdtThread &senderThread);
+                                  const FileFileThread &senderThread);
 
   FileFile *wdtParent_;
 
@@ -82,17 +100,22 @@ class FileFileThread : public WdtThread {
 
   static const StateFunction stateMap_[];
 
+  bool isTty_{false};
+
   ThreadTransferHistory &getTransferHistory() {
     return transferHistoryController_->getTransferHistory(port_);
   }
 
-  FileWdtState checkForAbort();
-
-  TransferStats sendOneByteSource(const std::unique_ptr<ByteSource> &source,
-                                  ErrorCode transferStatus);
+  FileFileState checkForAbort();
 
   DirectorySourceQueue *dirQueue_;
 
   TransferHistoryController *transferHistoryController_;
 
+  std::unique_ptr<IAbortChecker> threadAbortChecker_{nullptr};
 
+  Checkpoint checkpoint_;
+
+};
+}
+}

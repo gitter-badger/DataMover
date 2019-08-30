@@ -1,9 +1,7 @@
 
-#include <wdt/workers/FileWdt.h>
-#include <wdt/workers/FileWdtThread.h>
+#include <wdt/workers/FileFile.h>
+#include <wdt/workers/FileFileThread.h>
 #include <wdt/Throttler.h>
-
-#include <wdt/util/ClientSocket.h>
 
 #include <folly/lang/Bits.h>
 #include <folly/hash/Checksum.h>
@@ -27,6 +25,10 @@ FileFile::FileFile(const WdtTransferRequest &transferRequest)
     WLOG(WARNING) << "FileFile without transferId... will likely fail to connect";
   }
   */
+}
+
+FileFile::FileFile(int port, int numSockets, const std::string &destDir)
+    : FileFile(WdtTransferRequest(port, numSockets, destDir)) {
 }
 
 FileFile::~FileFile() {
@@ -93,7 +95,7 @@ ErrorCode FileFile::start() {
   threadsController_->setNumFunnels(FileFileThread::NUM_FUNNELS);
   threadsController_->setNumConditions(FileFileThread::NUM_CONDITIONS);
   // TODO: fix this ! use transferRequest! (and dup from Receiver)
-  senderThreads_ = threadsController_->makeThreads<FileFile, FileFileThread>(
+  workerThreads_ = threadsController_->makeThreads<FileFile, FileFileThread>(
       this, transferRequest_.ports.size(), transferRequest_.ports);
   if (downloadResumptionEnabled_ && deleteExtraFiles) {
     if (getProtocolVersion() >= Protocol::DELETE_CMD_VERSION) {
@@ -108,7 +110,7 @@ ErrorCode FileFile::start() {
   if (twoPhases) {
     dirThread_.join();
   }
-  for (auto &senderThread : senderThreads_) {
+  for (auto &senderThread : workerThreads_) {
     senderThread->startThread();
   }
   if (progressReportEnabled) {
@@ -125,7 +127,7 @@ const std::string &FileFile::getDestination() const {
 
 TransferStats FileFile::getGlobalTransferStats() const {
   TransferStats globalStats;
-  for (const auto &thread : senderThreads_) {
+  for (const auto &thread : workerThreads_) {
     globalStats += thread->getTransferStats();
   }
   return globalStats;
@@ -133,7 +135,7 @@ TransferStats FileFile::getGlobalTransferStats() const {
 
 TransferStats FileFile::getGlobalTransferStats() const {
   TransferStats globalStats;
-  for (const auto &thread : senderThreads_) {
+  for (const auto &thread : workerThreads_) {
     globalStats += thread->getTransferStats();
   }
   return globalStats;
@@ -156,7 +158,7 @@ std::unique_ptr<TransferReport> FileFile::finish() {
   const bool twoPhases = options_.two_phases;
   bool progressReportEnabled =
       progressReporter_ && progressReportIntervalMillis_ > 0;
-  for (auto &senderThread : senderThreads_) {
+  for (auto &senderThread : workerThreads_) {
     senderThread->finish();
   }
   if (!twoPhases) {
@@ -168,12 +170,12 @@ std::unique_ptr<TransferReport> FileFile::finish() {
     progressReporterThread_.join();
   }
   std::vector<TransferStats> threadStats;
-  for (auto &senderThread : senderThreads_) {
+  for (auto &senderThread : workerThreads_) {
     threadStats.push_back(senderThread->moveStats());
   }
 
   bool allSourcesAcked = false;
-  for (auto &senderThread : senderThreads_) {
+  for (auto &senderThread : workerThreads_) {
     auto &stats = senderThread->getTransferStats();
     if (stats.getErrorCode() == OK) {
       // at least one thread finished correctly
@@ -240,7 +242,7 @@ std::unique_ptr<TransferReport> FileFile::transfer() {
   return finish();
 }
 
-void FileFIle::validateTransferStats(
+void FileFile::validateTransferStats(
     const std::vector<TransferStats> &transferredSourceStats,
     const std::vector<TransferStats> &failedSourceStats) {
   int64_t sourceFailedAttempts = 0;
@@ -265,7 +267,7 @@ void FileFIle::validateTransferStats(
     sourceEffectiveDataBytes += stat.getEffectiveDataBytes();
     sourceNumBlocks += stat.getNumBlocks();
   }
-  for (const auto &senderThread : senderThreads_) {
+  for (const auto &senderThread : workerThreads_) {
     const auto &stat = senderThread->getTransferStats();
     threadFailedAttempts += stat.getFailedAttempts();
     threadDataBytes += stat.getDataBytes();
@@ -277,10 +279,6 @@ void FileFIle::validateTransferStats(
   WDT_CHECK(sourceDataBytes == threadDataBytes);
   WDT_CHECK(sourceEffectiveDataBytes == threadEffectiveDataBytes);
   WDT_CHECK(sourceNumBlocks == threadNumBlocks);
-}
-
-void FileFile::setSocketCreator(FileFile::ISocketCreator *socketCreator) {
-  socketCreator_ = socketCreator;
 }
 
 void FileFile::reportProgress() {
@@ -335,11 +333,36 @@ void FileFile::logPerfStats() const {
   }
 
   PerfStatReport report(options_);
-  for (auto &senderThread : senderThreads_) {
+  for (auto &senderThread : workerThreads_) {
     report += senderThread->getPerfReport();
   }
   report += dirQueue_->getPerfReport();
   WLOG(INFO) << report;
+}
+
+void FileFile::endCurGlobalSession() {
+  setTransferStatus(FINISHED);
+  if (!hasNewTransferStarted_) {
+    WLOG(WARNING) << "WDT transfer did not start, no need to end session";
+    return;
+  }
+  WLOG(INFO) << "Ending the transfer " << getTransferId();
+  if (throttler_) {
+    throttler_->endTransfer();
+  }
+  checkpoints_.clear();
+  if (fileCreator_) {
+    fileCreator_->clearAllocationMap();
+  }
+  // TODO might consider moving closing the transfer log here
+  hasNewTransferStarted_.store(false);
+}
+
+void FileFile::addCheckpoint(Checkpoint checkpoint) {
+  WLOG(INFO) << "Adding global checkpoint " << checkpoint.port << " "
+             << checkpoint.numBlocks << " "
+             << checkpoint.lastBlockReceivedBytes;
+  checkpoints_.emplace_back(checkpoint);
 }
 
 }
