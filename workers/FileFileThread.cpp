@@ -45,6 +45,21 @@ ErrorCode FileFileThread::init() {
   return OK;
 }
 
+int32_t FileFileThread::getPort() const {
+  return 0;
+}
+
+void FileFileThread::reset() {
+  numRead_ = off_ = 0;
+  //checkpointIndex_ = pendingCheckpointIndex_ = 0;
+  //senderReadTimeout_ = senderWriteTimeout_ = -1;
+  //curConnectionVerified_ = false;
+  threadStats_.reset();
+  //checkpoints_.clear();
+  //newCheckpoints_.clear();
+  //checkpoint_ = Checkpoint(getPort());
+}
+
 FileFileState FileFileThread::copyFileChunk() {
   WTVLOG(1) << "entered COPY_FILE_CHUNK state";
   ThreadTransferHistory &transferHistory = getTransferHistory();
@@ -184,6 +199,23 @@ FileFileState FileFileThread::finishWithError() {
   controller_->markState(threadIndex_, FINISHED);
   guard.notifyOne();
   return END;
+}
+
+std::ostream &operator<<(std::ostream &os, const FileFileThread &workerThread) {
+  os << "Thread[" << workerThread.threadIndex_
+     << ", port: " << workerThread.port_ << "] ";
+  return os;
+}
+
+ErrorCode FileFileThread::getThreadAbortCode() {
+  ErrorCode globalAbortCode = wdtParent_->getCurAbortCode();
+  if (globalAbortCode != OK) {
+    return globalAbortCode;
+  }
+  if (getTransferHistory().isGlobalCheckpointReceived()) {
+    return GLOBAL_CHECKPOINT_ABORT;
+  }
+  return OK;
 }
 
 }

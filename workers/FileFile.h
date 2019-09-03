@@ -35,6 +35,8 @@ class FileFile : public WdtBase {
 
   void setProgressReportIntervalMillis(const int progressReportIntervalMillis);
 
+  bool hasNewTransferStarted() const;
+
   std::unique_ptr<TransferReport> getTransferReport();
  private:
   friend class FileFileThread;
@@ -47,6 +49,8 @@ class FileFile : public WdtBase {
   bool isSendFileChunks() const;
 
   bool isFileChunksReceived();
+
+  std::atomic<bool> hasNewTransferStarted_{false};
 
   /// FileFile thread calls this method to set the file chunks info received
   /// from the receiver
@@ -126,7 +130,19 @@ class FileFile : public WdtBase {
 
   std::vector<Checkpoint> checkpoints_;
 
-  std::atomic<bool> hasNewTransferStarted_{false};
+  std::unique_ptr<TransferLogManager> transferLogManager_;
+
+  int backlog_;
+
+  std::vector<std::unique_ptr<WdtThread>> receiverThreads_;
+
+  std::string recoveryId_;
+
+  void setRecoveryId(const std::string &recoveryId);
+
+  int64_t getTransferConfig() const;
+
+  void traverseDestinationDir(std::vector<FileChunksInfo> &fileChunksInfo);
 
 };
 

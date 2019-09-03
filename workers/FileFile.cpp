@@ -15,7 +15,7 @@ namespace wdt {
 
 FileFile::FileFile(const WdtTransferRequest &transferRequest)
     : queueAbortChecker_(this) {
-  WLOG(INFO) << "FileFile " << Protocol::getFullVersion();
+  WLOG(INFO) << "FileFile ";
   transferRequest_ = transferRequest;
 
   progressReportIntervalMillis_ = options_.progress_report_interval_millis;
@@ -50,24 +50,6 @@ ErrorCode FileFile::start() {
     transferStatus_ = ONGOING;
   }
 
-  // set up directory queue
-  dirQueue_.reset(new DirectorySourceQueue(options_, transferRequest_.directory,
-                                           &queueAbortChecker_));
-  WVLOG(3) << "Configuring the  directory queue";
-  dirQueue_->setIncludePattern(options_.include_regex);
-  dirQueue_->setExcludePattern(options_.exclude_regex);
-  dirQueue_->setPruneDirPattern(options_.prune_dir_regex);
-  dirQueue_->setFollowSymlinks(options_.follow_symlinks);
-  dirQueue_->setBlockSizeMbytes(options_.block_size_mbytes);
-  dirQueue_->setNumClientThreads(transferRequest_.ports.size());
-  dirQueue_->setOpenFilesDuringDiscovery(options_.open_files_during_discovery);
-  dirQueue_->setDirectReads(options_.odirect_reads);
-  if (!transferRequest_.fileInfo.empty() ||
-      transferRequest_.disableDirectoryTraversal) {
-    dirQueue_->setFileInfo(transferRequest_.fileInfo);
-  }
-  transferHistoryController_ =
-      std::make_unique<TransferHistoryController>(*dirQueue_);
 
   checkAndUpdateBufferSize();
   const bool twoPhases = options_.two_phases;
@@ -97,6 +79,7 @@ ErrorCode FileFile::start() {
   // TODO: fix this ! use transferRequest! (and dup from Receiver)
   workerThreads_ = threadsController_->makeThreads<FileFile, FileFileThread>(
       this, transferRequest_.ports.size(), transferRequest_.ports);
+    /* FIXME need to be abel to set this with options.
   if (downloadResumptionEnabled_ && deleteExtraFiles) {
     if (getProtocolVersion() >= Protocol::DELETE_CMD_VERSION) {
       dirQueue_->enableFileDeletion();
@@ -106,6 +89,7 @@ ErrorCode FileFile::start() {
                     << getProtocolVersion();
     }
   }
+  */
   dirThread_ = dirQueue_->buildQueueAsynchronously();
   if (twoPhases) {
     dirThread_.join();
@@ -121,8 +105,117 @@ ErrorCode FileFile::start() {
   return OK;
 }
 
+bool FileFile::hasNewTransferStarted() const {
+  return hasNewTransferStarted_.load();
+}
+
+const WdtTransferRequest &FileFile::init() {
+
+  // set up directory queue
+  dirQueue_.reset(new DirectorySourceQueue(options_, transferRequest_.directory,
+                                           &queueAbortChecker_));
+  WVLOG(3) << "Configuring the  directory queue";
+  dirQueue_->setIncludePattern(options_.include_regex);
+  dirQueue_->setExcludePattern(options_.exclude_regex);
+  dirQueue_->setPruneDirPattern(options_.prune_dir_regex);
+  dirQueue_->setFollowSymlinks(options_.follow_symlinks);
+  dirQueue_->setBlockSizeMbytes(options_.block_size_mbytes);
+  dirQueue_->setNumClientThreads(transferRequest_.ports.size());
+  dirQueue_->setOpenFilesDuringDiscovery(options_.open_files_during_discovery);
+  dirQueue_->setDirectReads(options_.odirect_reads);
+  if (!transferRequest_.fileInfo.empty() ||
+      transferRequest_.disableDirectoryTraversal) {
+    dirQueue_->setFileInfo(transferRequest_.fileInfo);
+  }
+
+  transferHistoryController_ =
+      std::make_unique<TransferHistoryController>(*dirQueue_);
+
+  transferLogManager_ = std::make_unique<TransferLogManager>(options_, getDestination());
+  checkAndUpdateBufferSize();
+  backlog_ = options_.backlog;
+  if (getTransferId().empty()) {
+    setTransferId(WdtBase::generateTransferId());
+  }
+
+  auto numThreads = transferRequest_.ports.size();
+  // This creates the destination directory (which is needed for transferLogMgr)
+  fileCreator_.reset(new FileCreator(
+      getDestination(), numThreads, *transferLogManager_, options_.skip_writes));
+
+  transferRequest_.downloadResumptionEnabled =
+      options_.enable_download_resumption;
+
+  if (options_.enable_download_resumption) {
+    WDT_CHECK(!options_.skip_writes)
+        << "Can not skip transfers with download resumption turned on";
+    if (options_.resume_using_dir_tree) {
+      WDT_CHECK(!options_.shouldPreallocateFiles())
+          << "Can not resume using directory tree if preallocation is enabled";
+    }
+    ErrorCode errCode = transferLogManager_->openLog();
+    if (errCode != OK) {
+      WLOG(ERROR) << "Failed to open transfer log " << errorCodeToStr(errCode);
+      transferRequest_.errorCode = errCode;
+      return transferRequest_;
+    }
+    ErrorCode code = transferLogManager_->parseAndMatch(
+        recoveryId_, getTransferConfig(), fileChunksInfo_);
+    if (code == OK && options_.resume_using_dir_tree) {
+      WDT_CHECK(fileChunksInfo_.empty());
+      traverseDestinationDir(fileChunksInfo_);
+    }
+  }
+
+  threadsController_ = new ThreadsController(numThreads);
+  threadsController_->setNumFunnels(FileFileThread::NUM_FUNNELS);
+  threadsController_->setNumBarriers(FileFileThread::NUM_BARRIERS);
+  threadsController_->setNumConditions(FileFileThread::NUM_CONDITIONS);
+  // TODO: take transferRequest directly !
+  workerThreads_ = threadsController_->makeThreads<FileFile, FileFileThread>(
+      this, transferRequest_.ports.size(), transferRequest_.ports);
+  size_t numSuccessfulInitThreads = 0;
+  for (auto &workerThread : workerThreads_) {
+    ErrorCode code = workerThread->init();
+    if (code == OK) {
+      ++numSuccessfulInitThreads;
+    }
+  }
+  WLOG(INFO) << "Registered " << numSuccessfulInitThreads
+             << " successful sockets";
+  ErrorCode code = OK;
+  const size_t targetSize = transferRequest_.ports.size();
+  // TODO: replace with getNumPorts/thread
+  if (numSuccessfulInitThreads != targetSize) {
+    code = FEWER_PORTS;
+    if (numSuccessfulInitThreads == 0) {
+      code = ERROR;
+    }
+  }
+
+  transferRequest_.ports.clear();
+  for (const auto &workerThread : workerThreads_) {
+    transferRequest_.ports.push_back(workerThread->getPort());
+  }
+
+  if (transferRequest_.hostName.empty()) {
+    char hostName[1024];
+    int ret = gethostname(hostName, sizeof(hostName));
+    if (ret == 0) {
+      transferRequest_.hostName.assign(hostName);
+    } else {
+      WPLOG(ERROR) << "Couldn't find the local host name";
+      code = ERROR;
+    }
+  }
+  transferRequest_.errorCode = code;
+  return transferRequest_;
+
+}
+
 const std::string &FileFile::getDestination() const {
-  return transferRequest_.destDir;
+  ///FIXME
+  return transferRequest_.destination;
 }
 
 TransferStats FileFile::getGlobalTransferStats() const {
@@ -133,12 +226,25 @@ TransferStats FileFile::getGlobalTransferStats() const {
   return globalStats;
 }
 
-TransferStats FileFile::getGlobalTransferStats() const {
+std::unique_ptr<FileCreator> &FileFile::getFileCreator() {
+  return fileCreator_;
+}
+
+std::unique_ptr<TransferReport> FileFile::getTransferReport() {
   TransferStats globalStats;
-  for (const auto &thread : workerThreads_) {
-    globalStats += thread->getTransferStats();
+  for (const auto &receiverThread : receiverThreads_) {
+    globalStats += receiverThread->getTransferStats();
   }
-  return globalStats;
+  std::unique_ptr<TransferReport> transferReport =
+      std::make_unique<TransferReport>(std::move(globalStats));
+  TransferStatus status = getTransferStatus();
+  ErrorCode errCode = transferReport->getSummary().getErrorCode();
+  if (status == NOT_STARTED && errCode == OK) {
+    WLOG(INFO) << "Transfer not started, setting the error code to ERROR";
+    transferReport->setErrorCode(ERROR);
+  }
+  WVLOG(1) << "Summary code " << errCode;
+  return transferReport;
 }
 
 std::unique_ptr<TransferReport> FileFile::finish() {
@@ -240,6 +346,19 @@ ErrorCode FileFile::transferAsync() {
 std::unique_ptr<TransferReport> FileFile::transfer() {
   start();
   return finish();
+}
+
+ErrorCode FileFile::validateTransferRequest() {
+  ErrorCode code = WdtBase::validateTransferRequest();
+  // If the request is still valid check for other
+  // sender specific validations
+  if (code == OK && transferRequest_.hostName.empty()) {
+    WLOG(ERROR) << "Transfer request validation failed for file file "
+                << transferRequest_.getLogSafeString();
+    code = INVALID_REQUEST;
+  }
+  transferRequest_.errorCode = code;
+  return code;
 }
 
 void FileFile::validateTransferStats(
@@ -363,6 +482,44 @@ void FileFile::addCheckpoint(Checkpoint checkpoint) {
              << checkpoint.numBlocks << " "
              << checkpoint.lastBlockReceivedBytes;
   checkpoints_.emplace_back(checkpoint);
+}
+
+void FileFile::setRecoveryId(const std::string &recoveryId) {
+  recoveryId_ = recoveryId;
+  WLOG(INFO) << "recovery id " << recoveryId_;
+}
+
+int64_t FileFile::getTransferConfig() const {
+  int64_t config = 0;
+  if (options_.shouldPreallocateFiles()) {
+    config = 1;
+  }
+  if (options_.resume_using_dir_tree) {
+    config |= (1 << 1);
+  }
+  return config;
+}
+
+void FileFile::traverseDestinationDir(
+    std::vector<FileChunksInfo> &fileChunksInfo) {
+  DirectorySourceQueue dirQueue(options_, getDirectory(),
+                                &abortCheckerCallback_);
+  dirQueue.buildQueueSynchronously();
+  auto &discoveredFilesInfo = dirQueue.getDiscoveredFilesMetaData();
+  for (auto &fileInfo : discoveredFilesInfo) {
+    if (fileInfo->relPath == kWdtLogName ||
+        fileInfo->relPath == kWdtBuggyLogName) {
+      // do not include wdt log files
+      WVLOG(1) << "Removing " << fileInfo->relPath
+               << " from the list of existing files";
+      continue;
+    }
+    FileChunksInfo chunkInfo(fileInfo->seqId, fileInfo->relPath,
+                             fileInfo->size);
+    chunkInfo.addChunk(Interval(0, fileInfo->size));
+    fileChunksInfo.emplace_back(std::move(chunkInfo));
+  }
+  return;
 }
 
 }

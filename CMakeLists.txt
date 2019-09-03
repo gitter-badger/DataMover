@@ -44,9 +44,9 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 # TODO: This doesn't seem to work / sets default to "" instead of Release...
 # set(CMAKE_BUILD_TYPE Release CACHE String "build type")
 # So hardcoding for now:
-#set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_BUILD_TYPE Release)
-set(CMAKE_CXX_FLAGS "-msse4.2 -mpclmul")
+set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_CXX_FLAGS "-ggdb -msse4.2 -mpclmul -fsanitize=address")
 #set(CMAKE_CXX_FLAGS "-msse4.2 -mpclmul -Wextra -Wsign-compare -Wunused-variable")
 #set(CMAKE_CXX_FLAGS "-msse4.2 -mpclmul -Wextra -Wsign-compare -Wunused-variable -Wconversion -Wsign-conversion")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "_bin/wdt")
@@ -79,37 +79,70 @@ set (FOLLY_CPP_SRC
 )
 
 # WDT's library proper - comes from: ls -1 *.cpp | grep -iv test
+
 add_library(wdt_min
-util/WdtSocket.cpp
-util/ClientSocket.cpp
-util/EncryptionUtils.cpp
-util/DirectorySourceQueue.cpp
-ErrorCodes.cpp
-util/FileByteSource.cpp
-util/FileCreator.cpp
-Protocol.cpp
-WdtThread.cpp
-util/ThreadsController.cpp
-workers/WdtFileThread.cpp
-workers/WdtFile.cpp
-workers/FileFileThread.cpp
-workers/FileFile.cpp
 WdtTransferRequest.cpp
-Reporting.cpp
-util/ThreadTransferHistory.cpp
-workers/FileWdtThread.cpp
-workers/FileWdt.cpp
-util/ServerSocket.cpp
-Throttler.cpp
-WdtOptions.cpp
-util/FileWriter.cpp
-util/TransferLogManager.cpp
-util/SerializationUtil.cpp
-util/Stats.cpp
-WdtBase.cpp
 WdtResourceController.cpp
+WdtOptions.cpp
 util/CommonImpl.cpp
+util/ServerSocket.cpp
+util/Stats.cpp
+util/ClientSocket.cpp
+util/ThreadTransferHistory.cpp
+util/FileWriter.cpp
+util/DirectorySourceQueue.cpp
+util/SerializationUtil.cpp
+util/WdtSocket.cpp
+util/ThreadsController.cpp
+util/EncryptionUtils.cpp
+util/FileByteSource.cpp
+util/TransferLogManager.cpp
+util/FileCreator.cpp
+Reporting.cpp
+Throttler.cpp
+ErrorCodes.cpp
+WdtThread.cpp
+workers/WdtFile.cpp
+workers/FileWdtThread.cpp
+workers/FileFileThread.cpp
+workers/WdtFileThread.cpp
+workers/FileFile.cpp
+workers/FileWdt.cpp
+WdtBase.cpp
+Protocol.cpp
 )
+
+#add_library(wdt_min
+#util/WdtSocket.cpp
+#util/ClientSocket.cpp
+#util/EncryptionUtils.cpp
+#util/DirectorySourceQueue.cpp
+#ErrorCodes.cpp
+#util/FileByteSource.cpp
+#util/FileCreator.cpp
+#Protocol.cpp
+#WdtThread.cpp
+#util/ThreadsController.cpp
+#workers/WdtFileThread.cpp
+#workers/WdtFile.cpp
+#WdtTransferRequest.cpp
+#Reporting.cpp
+#util/ThreadTransferHistory.cpp
+#workers/FileWdtThread.cpp
+#workers/FileWdt.cpp
+#util/ServerSocket.cpp
+#Throttler.cpp
+#WdtOptions.cpp
+#util/FileWriter.cpp
+#util/TransferLogManager.cpp
+#util/SerializationUtil.cpp
+#util/Stats.cpp
+#WdtBase.cpp
+#WdtResourceController.cpp
+#util/CommonImpl.cpp
+#workers/FileFileThread.cpp
+#workers/FileFile.cpp
+#)
 # Source files that depend on gflags and provide flags -> options init
 set (WDT_FLAGS_RELATED_SRC
 util/WdtFlags.cpp
@@ -214,18 +247,18 @@ include_directories(${GLOG_INCLUDE_DIR})
 include_directories(${GFLAGS_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..)
 
-add_executable(wdtbin wdtCmdLine.cpp ${WDT_FLAGS_RELATED_SRC})
-set_target_properties(wdtbin PROPERTIES COMPILE_DEFINITIONS "STANDALONE_APP")
+#add_executable(wdtbin wdtCmdLine.cpp ${WDT_FLAGS_RELATED_SRC})
+#set_target_properties(wdtbin PROPERTIES COMPILE_DEFINITIONS "STANDALONE_APP")
 
-target_link_libraries(wdtbin wdt_min)
+#target_link_libraries(wdtbin wdt_min)
 
 ### Install rules
-set_target_properties(wdtbin PROPERTIES RUNTIME_OUTPUT_NAME "wdt")
-install(TARGETS wdtbin wdt wdt_min folly4wdt
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-  )
+#set_target_properties(wdtbin PROPERTIES RUNTIME_OUTPUT_NAME "wdt")
+#install(TARGETS wdtbin wdt wdt_min folly4wdt
+#  RUNTIME DESTINATION bin
+#  LIBRARY DESTINATION lib
+#  ARCHIVE DESTINATION lib
+#  )
 
 ### Install header files
 

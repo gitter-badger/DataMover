@@ -57,7 +57,10 @@ class FileFileThread : public WdtThread {
         transferHistoryController_(worker->transferHistoryController_.get()) {
 
     controller_->registerThread(threadIndex_);
+    WLOG(INFO) << "FileFileThread port: " << port_;
+    WLOG(INFO) << "FileFileThread threadStats: " << threadStats_;
     transferHistoryController_->addThreadHistory(port_, threadStats_);
+    WLOG(INFO) << "after";
     threadAbortChecker_ = std::make_unique<FileAbortChecker>(this);
     threadCtx_->setAbortChecker(threadAbortChecker_.get());
     threadStats_.setId(folly::to<std::string>(threadIndex_));
@@ -85,12 +88,14 @@ class FileFileThread : public WdtThread {
 
   void reset() override;
 
+  int32_t getPort() const override;
+
   ErrorCode getThreadAbortCode();
 
  private:
   /// Overloaded operator for printing thread info
   friend std::ostream &operator<<(std::ostream &os,
-                                  const FileFileThread &senderThread);
+                                  const FileFileThread &workerThread);
 
   FileFile *wdtParent_;
 
@@ -101,6 +106,12 @@ class FileFileThread : public WdtThread {
   static const StateFunction stateMap_[];
 
   bool isTty_{false};
+
+  int checkpointIndex_{0};
+
+  Checkpoint checkpoint_;
+
+  std::vector<Checkpoint> newCheckpoints_;
 
   ThreadTransferHistory &getTransferHistory() {
     return transferHistoryController_->getTransferHistory(port_);
@@ -113,8 +124,6 @@ class FileFileThread : public WdtThread {
   TransferHistoryController *transferHistoryController_;
 
   std::unique_ptr<IAbortChecker> threadAbortChecker_{nullptr};
-
-  Checkpoint checkpoint_;
 
 };
 }

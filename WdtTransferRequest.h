@@ -174,7 +174,7 @@ struct WdtTransferRequest {
   std::string directory;
 
   /// Directory to write the data to (FileFile Worker)
-  std::string dst_directory;
+  std::string destination;
 
   /// The s3 bucket to use if needed (s3 workers)
   std::string s3Bucket;

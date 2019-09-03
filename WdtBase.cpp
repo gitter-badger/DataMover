@@ -111,6 +111,10 @@ const std::string& WdtBase::getDirectory() const {
   return transferRequest_.directory;
 }
 
+const std::string& WdtBase::getDestination() const {
+  return transferRequest_.destination;
+}
+
 WdtTransferRequest& WdtBase::getTransferRequest() {
   return transferRequest_;
 }

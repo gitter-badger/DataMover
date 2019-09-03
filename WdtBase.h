@@ -119,6 +119,9 @@ class WdtBase {
   /// @return   Root directory
   const std::string& getDirectory() const;
 
+  /// @return   Root destination directory
+  const std::string& getDestination() const;
+
   /// @param      whether the object is stale. If all the transferring threads
   ///             have finished, the object will marked as stale
   bool isStale();
