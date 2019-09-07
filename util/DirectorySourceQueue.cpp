@@ -479,7 +479,6 @@ void DirectorySourceQueue::createIntoQueueInternal(SourceMetaData *metadata) {
   // if block transfer is disabled, treating fileSize as block size. This
   // ensures that we create a single block
   auto blockSize = enableBlockTransfer ? blockSizeBytes : fileSize;
-  int blockCount = 0;
   std::vector<Interval> remainingChunks;
   int64_t seqId;
   FileAllocationStatus allocationStatus;
@@ -518,23 +517,26 @@ void DirectorySourceQueue::createIntoQueueInternal(SourceMetaData *metadata) {
   metadata->prevSeqId = prevSeqId;
   metadata->allocationStatus = allocationStatus;
 
+  int blockNumber = 0;
+  int blockNumber = remainintChunks.size();
   for (const auto &chunk : remainingChunks) {
     int64_t offset = chunk.start_;
     int64_t remainingBytes = chunk.size();
     do {
       const int64_t size = std::min<int64_t>(remainingBytes, blockSize);
+      WLOG(INFO) << "Chunk number: " << blockNum << " " << metadata->relPath;
       std::unique_ptr<ByteSource> source =
-          std::make_unique<FileByteSource>(metadata, size, offset);
+          std::make_unique<FileByteSource>(metadata, size, offset, blockNumber, blockTotal);
       sourceQueue_.push(std::move(source));
       remainingBytes -= size;
       offset += size;
-      blockCount++;
+      blockNumber++;
     } while (remainingBytes > 0);
     totalFileSize_ += chunk.size();
   }
   numEntries_++;
-  numBlocks_ += blockCount;
-  smartNotify(blockCount);
+  numBlocks_ += blockNumber;
+  smartNotify(blockNumber);
 }
 
 std::vector<TransferStats> &DirectorySourceQueue::getFailedSourceStats() {
@@ -650,7 +652,7 @@ void DirectorySourceQueue::enqueueFilesToBeDeleted() {
     sharedFileData_.emplace_back(metadata);
     // create a byte source with size and offset equal to 0
     std::unique_ptr<ByteSource> source =
-        std::make_unique<FileByteSource>(metadata, 0, 0);
+        std::make_unique<FileByteSource>(metadata, 0, 0, 0);
     sourceQueue_.push(std::move(source));
     numFilesToBeDeleted++;
   }
@@ -683,7 +685,7 @@ std::unique_ptr<ByteSource> DirectorySourceQueue::getNextSource(
       conditionNotEmpty_.notify_all();
     }
     lock.unlock();
-    WVLOG(1) << "got next source " << rootDir_ + source->getIdentifier()
+    WLOG(INFO) << "got next source " << rootDir_ + source->getIdentifier()
              << " size " << source->getSize();
     // try to open the source
     if (source->open(callerThreadCtx) == OK) {

@@ -1,6 +1,6 @@
 
-#include <wdt/workers/FileFile.h>
-#include <wdt/workers/FileFileThread.h>
+#include <wdt/workers/FileS3.h>
+#include <wdt/workers/FileS3Thread.h>
 #include <wdt/Throttler.h>
 
 #include <folly/lang/Bits.h>
@@ -13,7 +13,7 @@
 namespace facebook {
 namespace wdt {
 
-void FileFile::endCurTransfer() {
+void FileS3::endCurTransfer() {
   endTime_ = Clock::now();
   WLOG(INFO) << "Last thread finished "
              << durationSeconds(endTime_ - startTime_) << " for transfer id "
@@ -24,7 +24,7 @@ void FileFile::endCurTransfer() {
   }
 }
 
-void FileFile::startNewTransfer() {
+void FileS3::startNewTransfer() {
   if (throttler_) {
     throttler_->startTransfer();
   }
@@ -32,34 +32,34 @@ void FileFile::startNewTransfer() {
              << transferRequest_.hostName;
 }
 
-FileFile::FileFile(const WdtTransferRequest &transferRequest)
+FileS3::FileS3(const WdtTransferRequest &transferRequest)
     : queueAbortChecker_(this) {
-  WLOG(INFO) << "FileFile: " << transferRequest.destination;
+  WLOG(INFO) << "FileS3: " << transferRequest.destination;
   transferRequest_ = transferRequest;
 
   progressReportIntervalMillis_ = options_.progress_report_interval_millis;
 
   /* Dont think i need
   if (getTransferId().empty()) {
-    WLOG(WARNING) << "FileFile without transferId... will likely fail to connect";
+    WLOG(WARNING) << "FileS3 without transferId... will likely fail to connect";
   }
   */
 }
 
-FileFile::FileFile(int port, int numSockets, const std::string &destDir)
-    : FileFile(WdtTransferRequest(port, numSockets, destDir)) {
+FileS3::FileS3(int port, int numSockets, const std::string &destDir)
+    : FileS3(WdtTransferRequest(port, numSockets, destDir)) {
 }
 
-FileFile::~FileFile() {
+FileS3::~FileS3() {
   TransferStatus status = getTransferStatus();
   if (status == ONGOING) {
-    WLOG(WARNING) << "FileFile being deleted. Forcefully aborting the transfer";
+    WLOG(WARNING) << "FileS3 being deleted. Forcefully aborting the transfer";
     abort(ABORTED_BY_APPLICATION);
   }
   finish();
 }
 
-ErrorCode FileFile::start() {
+ErrorCode FileS3::start() {
   {
     std::lock_guard<std::mutex> lock(mutex_);
     if (transferStatus_ != NOT_STARTED) {
@@ -69,6 +69,10 @@ ErrorCode FileFile::start() {
     transferStatus_ = ONGOING;
   }
 
+  if( options_.buffer_size != (options_.block_size_mbytes*1024*1024)){
+      WLOG(ERROR) << "S3 requires that the buffer size equals the block size.";
+      return INCOMPATABLE_OPTIONS;
+  }
 
   checkAndUpdateBufferSize();
   const bool twoPhases = options_.two_phases;
@@ -92,11 +96,11 @@ ErrorCode FileFile::start() {
     configureThrottler();
   }
   threadsController_ = new ThreadsController(transferRequest_.ports.size());
-  threadsController_->setNumBarriers(FileFileThread::NUM_BARRIERS);
-  threadsController_->setNumFunnels(FileFileThread::NUM_FUNNELS);
-  threadsController_->setNumConditions(FileFileThread::NUM_CONDITIONS);
+  threadsController_->setNumBarriers(FileS3Thread::NUM_BARRIERS);
+  threadsController_->setNumFunnels(FileS3Thread::NUM_FUNNELS);
+  threadsController_->setNumConditions(FileS3Thread::NUM_CONDITIONS);
   // TODO: fix this ! use transferRequest! (and dup from Receiver)
-  workerThreads_ = threadsController_->makeThreads<FileFile, FileFileThread>(
+  workerThreads_ = threadsController_->makeThreads<FileS3, FileS3Thread>(
       this, transferRequest_.ports.size(), transferRequest_.ports);
   if (downloadResumptionEnabled_ && deleteExtraFiles) {
     dirQueue_->enableFileDeletion();
@@ -110,17 +114,21 @@ ErrorCode FileFile::start() {
   }
   if (progressReportEnabled) {
     progressReporter_->start();
-    std::thread reporterThread(&FileFile::reportProgress, this);
+    std::thread reporterThread(&FileS3::reportProgress, this);
     progressReporterThread_ = std::move(reporterThread);
   }
   return OK;
 }
 
-bool FileFile::hasNewTransferStarted() const {
+bool FileS3::hasNewTransferStarted() const {
   return hasNewTransferStarted_.load();
 }
 
-const WdtTransferRequest &FileFile::init() {
+const WdtTransferRequest &FileS3::init() {
+
+  // If this is not done AWS core dumps
+  Aws::SDKOptions options;
+  Aws::InitAPI(options);
 
   // set up directory queue
   dirQueue_.reset(new DirectorySourceQueue(options_, transferRequest_.directory,
@@ -151,8 +159,6 @@ const WdtTransferRequest &FileFile::init() {
 
   auto numThreads = transferRequest_.ports.size();
   // This creates the destination directory (which is needed for transferLogMgr)
-  fileCreator_.reset(new FileCreator(
-      getDestination(), numThreads, *transferLogManager_, options_.skip_writes));
 
   transferRequest_.downloadResumptionEnabled =
       options_.enable_download_resumption;
@@ -179,11 +185,11 @@ const WdtTransferRequest &FileFile::init() {
   }
 
   threadsController_ = new ThreadsController(numThreads);
-  threadsController_->setNumFunnels(FileFileThread::NUM_FUNNELS);
-  threadsController_->setNumBarriers(FileFileThread::NUM_BARRIERS);
-  threadsController_->setNumConditions(FileFileThread::NUM_CONDITIONS);
+  threadsController_->setNumFunnels(FileS3Thread::NUM_FUNNELS);
+  threadsController_->setNumBarriers(FileS3Thread::NUM_BARRIERS);
+  threadsController_->setNumConditions(FileS3Thread::NUM_CONDITIONS);
   // TODO: take transferRequest directly !
-  workerThreads_ = threadsController_->makeThreads<FileFile, FileFileThread>(
+  workerThreads_ = threadsController_->makeThreads<FileS3, FileS3Thread>(
       this, transferRequest_.ports.size(), transferRequest_.ports);
   size_t numSuccessfulInitThreads = 0;
   for (auto &workerThread : workerThreads_) {
@@ -224,12 +230,12 @@ const WdtTransferRequest &FileFile::init() {
 
 }
 
-const std::string &FileFile::getDestination() const {
+const std::string &FileS3::getDestination() const {
   ///FIXME
   return transferRequest_.destination;
 }
 
-TransferStats FileFile::getGlobalTransferStats() const {
+TransferStats FileS3::getGlobalTransferStats() const {
   TransferStats globalStats;
   for (const auto &thread : workerThreads_) {
     globalStats += thread->getTransferStats();
@@ -237,11 +243,7 @@ TransferStats FileFile::getGlobalTransferStats() const {
   return globalStats;
 }
 
-std::unique_ptr<FileCreator> &FileFile::getFileCreator() {
-  return fileCreator_;
-}
-
-std::unique_ptr<TransferReport> FileFile::getTransferReport() {
+std::unique_ptr<TransferReport> FileS3::getTransferReport() {
   int64_t totalFileSize = 0;
   int64_t fileCount = 0;
   bool fileDiscoveryFinished = false;
@@ -265,9 +267,9 @@ std::unique_ptr<TransferReport> FileFile::getTransferReport() {
   return transferReport;
 }
 
-std::unique_ptr<TransferReport> FileFile::finish() {
+std::unique_ptr<TransferReport> FileS3::finish() {
   std::unique_lock<std::mutex> instanceLock(instanceManagementMutex_);
-  WVLOG(1) << "FileFile::finish()";
+  WVLOG(1) << "FileS3::finish()";
   TransferStatus status = getTransferStatus();
   if (status == NOT_STARTED) {
     WLOG(WARNING) << "Even though transfer has not started, finish is called";
@@ -357,16 +359,16 @@ std::unique_ptr<TransferReport> FileFile::finish() {
   return transferReport;
 }
 
-ErrorCode FileFile::transferAsync() {
+ErrorCode FileS3::transferAsync() {
   return start();
 }
 
-std::unique_ptr<TransferReport> FileFile::transfer() {
+std::unique_ptr<TransferReport> FileS3::transfer() {
   start();
   return finish();
 }
 
-ErrorCode FileFile::validateTransferRequest() {
+ErrorCode FileS3::validateTransferRequest() {
   ErrorCode code = WdtBase::validateTransferRequest();
   // If the request is still valid check for other
   // sender specific validations
@@ -379,7 +381,7 @@ ErrorCode FileFile::validateTransferRequest() {
   return code;
 }
 
-void FileFile::validateTransferStats(
+void FileS3::validateTransferStats(
     const std::vector<TransferStats> &transferredSourceStats,
     const std::vector<TransferStats> &failedSourceStats) {
   int64_t sourceFailedAttempts = 0;
@@ -418,7 +420,7 @@ void FileFile::validateTransferStats(
   WDT_CHECK(sourceNumBlocks == threadNumBlocks);
 }
 
-void FileFile::reportProgress() {
+void FileS3::reportProgress() {
   WDT_CHECK(progressReportIntervalMillis_ > 0);
   int throughputUpdateIntervalMillis =
       options_.throughput_update_interval_millis;
@@ -464,7 +466,7 @@ void FileFile::reportProgress() {
   }
 }
 
-void FileFile::logPerfStats() const {
+void FileS3::logPerfStats() const {
   if (!options_.enable_perf_stat_collection) {
     return;
   }
@@ -477,7 +479,7 @@ void FileFile::logPerfStats() const {
   WLOG(INFO) << report;
 }
 
-void FileFile::endCurGlobalSession() {
+void FileS3::endCurGlobalSession() {
   setTransferStatus(FINISHED);
   if (!hasNewTransferStarted_) {
     WLOG(WARNING) << "WDT transfer did not start, no need to end session";
@@ -488,26 +490,23 @@ void FileFile::endCurGlobalSession() {
     throttler_->endTransfer();
   }
   checkpoints_.clear();
-  if (fileCreator_) {
-    fileCreator_->clearAllocationMap();
-  }
   // TODO might consider moving closing the transfer log here
   hasNewTransferStarted_.store(false);
 }
 
-void FileFile::addCheckpoint(Checkpoint checkpoint) {
+void FileS3::addCheckpoint(Checkpoint checkpoint) {
   WLOG(INFO) << "Adding global checkpoint " << checkpoint.port << " "
              << checkpoint.numBlocks << " "
              << checkpoint.lastBlockReceivedBytes;
   checkpoints_.emplace_back(checkpoint);
 }
 
-void FileFile::setRecoveryId(const std::string &recoveryId) {
+void FileS3::setRecoveryId(const std::string &recoveryId) {
   recoveryId_ = recoveryId;
   WLOG(INFO) << "recovery id " << recoveryId_;
 }
 
-int64_t FileFile::getTransferConfig() const {
+int64_t FileS3::getTransferConfig() const {
   int64_t config = 0;
   if (options_.resume_using_dir_tree) {
     config |= (1 << 1);
@@ -515,7 +514,7 @@ int64_t FileFile::getTransferConfig() const {
   return config;
 }
 
-void FileFile::traverseDestinationDir(
+void FileS3::traverseDestinationDir(
     std::vector<FileChunksInfo> &fileChunksInfo) {
   DirectorySourceQueue dirQueue(options_, getDirectory(),
                                 &abortCheckerCallback_);

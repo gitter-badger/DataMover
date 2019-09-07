@@ -255,6 +255,13 @@ class TransferStats {
     numBlocksSend_ = numBlocksSend;
   }
 
+  /// @param inc num blocks send
+  void incNumBlocksSend() {
+    folly::RWSpinLock::WriteHolder lock(mutex_.get());
+    numBlocksSend_++;
+  }
+
+
   /// @param set total sender bytes
   void setTotalSenderBytes(int64_t totalSenderBytes) {
     folly::RWSpinLock::WriteHolder lock(mutex_.get());

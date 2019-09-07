@@ -134,7 +134,6 @@ class FileFile : public WdtBase {
 
   int backlog_;
 
-  std::vector<std::unique_ptr<WdtThread>> receiverThreads_;
 
   std::string recoveryId_;
 

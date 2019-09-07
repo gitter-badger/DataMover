@@ -251,10 +251,8 @@ ThreadTransferHistory &TransferHistoryController::getTransferHistory(
 
 void TransferHistoryController::addThreadHistory(int32_t port,
                                                  TransferStats &threadStats) {
-  WLOG(INFO) << "Adding the history for " << port;
   threadHistoriesMap_.emplace(port, std::make_unique<ThreadTransferHistory>(
                                         dirQueue_, threadStats, port));
-  WLOG(INFO) << "AFTER EMPLACE";
 }
 
 ErrorCode TransferHistoryController::handleVersionMismatch() {

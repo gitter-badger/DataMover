@@ -1,7 +1,7 @@
 
 #pragma once
 #include <folly/Conv.h>
-#include <wdt/workers/FileFile.h>
+#include <wdt/workers/FileS3.h>
 #include <wdt/WdtBase.h>
 #include <wdt/WdtThread.h>
 #include <wdt/util/ThreadTransferHistory.h>
@@ -13,14 +13,14 @@ namespace wdt {
 class DirectorySourceQueue;
 
 /// state machine states
-enum FileFileState {
+enum FileS3State {
   COPY_FILE_CHUNK,
   CHECK_FOR_ABORT,
   FINISH_WITH_ERROR,
   END
 };
 
-class FileFileThread : public WdtThread {
+class FileS3Thread : public WdtThread {
  public:
 
   /// Identifiers for the barriers used in the thread
@@ -34,7 +34,7 @@ class FileFileThread : public WdtThread {
 
   class FileAbortChecker : public IAbortChecker {
    public:
-    explicit FileAbortChecker(FileFileThread *threadPtr)
+    explicit FileAbortChecker(FileS3Thread *threadPtr)
         : threadPtr_(threadPtr) {
     }
 
@@ -43,10 +43,10 @@ class FileFileThread : public WdtThread {
     }
 
    private:
-    FileFileThread *threadPtr_{nullptr};
+    FileS3Thread *threadPtr_{nullptr};
   };
 
-  FileFileThread( FileFile *worker, int threadIndex, int32_t port,
+  FileS3Thread( FileS3 *worker, int threadIndex, int32_t port,
             ThreadsController *threadsController)
       : WdtThread(
             worker->options_, threadIndex, port,
@@ -64,12 +64,12 @@ class FileFileThread : public WdtThread {
     isTty_ = isatty(STDERR_FILENO);
   }
 
-  ~FileFileThread() override {
+  ~FileS3Thread() override {
   }
 
-  FileFileState copyFileChunk();
+  FileS3State copyFileChunk();
 
-  FileFileState finishWithError();
+  FileS3State finishWithError();
 
   TransferStats copyOneByteSource();
   TransferStats copyOneByteSource(const std::unique_ptr<ByteSource> &source,
@@ -79,7 +79,7 @@ class FileFileThread : public WdtThread {
   int64_t off_{0};
   int64_t oldOffset_{0};
 
-  typedef FileFileState (FileFileThread::*StateFunction)();
+  typedef FileS3State (FileS3Thread::*StateFunction)();
 
   ErrorCode init() override;
 
@@ -92,9 +92,9 @@ class FileFileThread : public WdtThread {
  private:
   /// Overloaded operator for printing thread info
   friend std::ostream &operator<<(std::ostream &os,
-                                  const FileFileThread &workerThread);
+                                  const FileS3Thread &workerThread);
 
-  FileFile *wdtParent_;
+  FileS3 *wdtParent_;
 
   void setFooterType();
 
@@ -114,7 +114,7 @@ class FileFileThread : public WdtThread {
     return transferHistoryController_->getTransferHistory(port_);
   }
 
-  FileFileState checkForAbort();
+  FileS3State checkForAbort();
 
   DirectorySourceQueue *dirQueue_;
 

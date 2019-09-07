@@ -7,6 +7,7 @@
 #include <folly/hash/Checksum.h>
 #include <folly/lang/Bits.h>
 #include <wdt/util/FileWriter.h>
+#include <sys/stat.h>
 
 namespace facebook {
 namespace wdt {
@@ -22,6 +23,9 @@ void FileFileThread::start() {
     threadStats_.setLocalErrorCode(MEMORY_ALLOCATION_ERROR);
     return;
   }
+
+  controller_->executeAtStart([&]() { wdtParent_->startNewTransfer(); });
+
   FileFileState state = COPY_FILE_CHUNK;
   while (true) {
     ErrorCode abortCode = wdtParent_->getCurAbortCode();
@@ -37,8 +41,9 @@ void FileFileThread::start() {
     state = (this->*stateMap_[state])();
   }
   controller_->deRegisterThread(threadIndex_);
-  controller_->executeAtEnd([&]() { wdtParent_->endCurGlobalSession(); });
-  WTLOG(INFO) << threadStats_;
+  //controller_->executeAtEnd([&]() { wdtParent_->endCurGlobalSession(); });
+  controller_->executeAtEnd([&]() { wdtParent_->endCurTransfer(); });
+  //WTLOG(INFO) << threadStats_;
 }
 
 ErrorCode FileFileThread::init() {
@@ -46,7 +51,7 @@ ErrorCode FileFileThread::init() {
 }
 
 int32_t FileFileThread::getPort() const {
-  return 0;
+  return port_;
 }
 
 void FileFileThread::reset() {
@@ -108,8 +113,7 @@ TransferStats FileFileThread::copyOneByteSource(
 
 
   WTVLOG(1) << "Read id:" << blockDetails.fileName
-            << " size:" << blockDetails.dataSize << " ooff:" << oldOffset_
-            << " off_: " << off_ << " numRead_: " << numRead_;
+            << " size:" << blockDetails.dataSize << " ooff:" << oldOffset_;
   auto &fileCreator = wdtParent_->getFileCreator();
   FileWriter writer(*threadCtx_, &blockDetails, fileCreator.get());
 
@@ -125,61 +129,77 @@ TransferStats FileFileThread::copyOneByteSource(
   }
 
   int32_t checksum = 0;
-  int64_t remainingData = numRead_ + oldOffset_ - off_;
-  int64_t toWrite = remainingData;
-  WDT_CHECK(remainingData >= 0);
-  if (remainingData >= blockDetails.dataSize) {
-    toWrite = blockDetails.dataSize;
-  }
-  threadStats_.addDataBytes(toWrite);
-  //checksum = folly::crc32c((const uint8_t *)(buf_ + off_), toWrite, checksum);
-  auto throttler = wdtParent_->getThrottler();
-  if (throttler) {
-    // We might be reading more than we require for this file but
-    // throttling should make sense for any additional bytes received
-    // on the network
-    throttler->limit(*threadCtx_, toWrite);
+  while (!source->finished()) {
+    int64_t size;
+    char *buffer = source->read(size);
+    if (source->hasError()) {
+      WTLOG(ERROR) << "Failed reading file " << source->getIdentifier()
+                   << " for fd " << metadata.fd ;
+      break;
+    }
+    WDT_CHECK(buffer && size > 0);
+
+    auto throttler = wdtParent_->getThrottler();
+    if (throttler) {
+        // We might be reading more than we require for this file but
+        // throttling should make sense for any additional bytes received
+        // on the network
+        throttler->limit(*threadCtx_, size);
+    }
+
+    ErrorCode code = ERROR;
+    code = writer.write(buffer, size);
+    if (code != OK) {
+        threadStats_.setLocalErrorCode(code);
+        return stats;
+    }
+
+    stats.addDataBytes(size);
+
+    if (wdtParent_->getCurAbortCode() != OK) {
+        WTLOG(ERROR) << "Thread marked for abort while processing "
+                    << blockDetails.fileName << " " << blockDetails.seqId;
+        threadStats_.setLocalErrorCode(ABORT);
+        return stats;
+    }
+
+    actualSize += size;
   }
 
-  ErrorCode code = ERROR;
-  code = writer.write(buf_ + off_, toWrite);
-  if (code != OK) {
-    threadStats_.setLocalErrorCode(code);
-    return stats;
-  }
-  threadStats_.addDataBytes(writer.getTotalWritten());
-
-  if (wdtParent_->getCurAbortCode() != OK) {
-    WTLOG(ERROR) << "Thread marked for abort while processing "
-                 << blockDetails.fileName << " " << blockDetails.seqId;
-    threadStats_.setLocalErrorCode(ABORT);
-    return stats;
-  }
-
-  // Sync the writer to disk and close it. We need to check for error code each
-  // time, otherwise we would move forward with corrupted files.
   const ErrorCode syncCode = writer.sync();
   if (syncCode != OK) {
-    WTLOG(ERROR) << "could not sync " << blockDetails.fileName << " to disk";
-    threadStats_.setLocalErrorCode(syncCode);
+      WTLOG(ERROR) << "could not sync " << blockDetails.fileName << " to disk";
+      threadStats_.setLocalErrorCode(syncCode);
+      return stats;
+  }
+
+  if (writer.getTotalWritten() != blockDetails.dataSize) {
+      WTLOG(ERROR) << "TotalWriten: " << writer.getTotalWritten()
+                   << " dataSize: " << blockDetails.dataSize;
+      WTLOG(ERROR) << "could not read entire content for "
+                  << blockDetails.fileName;
+      threadStats_.setLocalErrorCode(BYTE_SOURCE_READ_ERROR);
+      return stats;
+  }
+
+  if (getThreadAbortCode() != OK) {
+    WTLOG(ERROR) << "Transfer aborted during block transfer "
+                 << source->getIdentifier();
+    stats.setLocalErrorCode(ABORT);
+    stats.incrFailedAttempts();
     return stats;
   }
   const ErrorCode closeCode = writer.close();
   if (closeCode != OK) {
-    WTLOG(ERROR) << "could not close " << blockDetails.fileName;
-    threadStats_.setLocalErrorCode(closeCode);
-    return stats;
+      WTLOG(ERROR) << "could not close " << blockDetails.fileName;
+      threadStats_.setLocalErrorCode(closeCode);
+      return stats;
   }
 
-  if (writer.getTotalWritten() != blockDetails.dataSize) {
-    WTLOG(ERROR) << "could not read entire content for "
-                 << blockDetails.fileName;
-    threadStats_.setLocalErrorCode(BYTE_SOURCE_READ_ERROR);
-    return stats;
-  }
-  //writtenGuard.dismiss();
-  WVLOG(2) << "completed " << blockDetails.fileName << " off: " << off_
-           << " numRead: " << numRead_;
+  WVLOG(2) << "completed " << blockDetails.fileName;
+  stats.setLocalErrorCode(OK);
+  stats.incrNumBlocks();
+  stats.addEffectiveBytes(0, stats.getDataBytes());
   return stats;
 };
 
