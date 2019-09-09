@@ -10,7 +10,7 @@
 
 #include <wdt/Protocol.h>
 #include <wdt/WdtConfig.h>
-#include <wdt/Writer.h>
+#include <wdt/util/Writer.h>
 #include <wdt/util/FileCreator.h>
 
 namespace facebook {

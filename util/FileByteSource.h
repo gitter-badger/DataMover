@@ -79,6 +79,14 @@ class FileByteSource : public ByteSource {
     return offset_;
   }
 
+  int64_t getBlockNumber(){
+    return blockNumber_;
+  }
+
+  int64_t getBlockTotal(){
+    return blockTotal_;
+  }
+
   /// @see ByteSource.h
   const SourceMetaData &getMetaData() const override {
     return *metadata_;

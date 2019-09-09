@@ -419,6 +419,17 @@ class WdtOptions {
    */
   ThrottlerOptions getThrottlerOptions() const;
 
+  // Move options to to inharited classes?? worth it?
+  Aws::String awsRegion{"us-east-1"};
+  Aws::String awsEndpointOverride{""};
+  bool awsVerifySSL{false};
+  int awsMaxConnections{128};
+  Aws::String awsAccessKeyId{""};
+  Aws::String awsSecretAccessKey{""};
+  Aws::String awsBucket{""};
+  bool awsForceMultipartObjects{true};
+
+
   // NOTE: any option added here should also be added to util/WdtFlags.cpp.inc
 
   /**

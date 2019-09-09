@@ -518,7 +518,7 @@ void DirectorySourceQueue::createIntoQueueInternal(SourceMetaData *metadata) {
   metadata->allocationStatus = allocationStatus;
 
   int blockNumber = 0;
-  int blockNumber = remainintChunks.size();
+  int blockTotal = remaininChunks.size();
   for (const auto &chunk : remainingChunks) {
     int64_t offset = chunk.start_;
     int64_t remainingBytes = chunk.size();

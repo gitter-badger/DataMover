@@ -19,7 +19,7 @@ WdtBase::WdtBase() : abortCheckerCallback_(this) {
   options_.copyInto(WdtOptions::get());
 }
 
-void WdtBase::setWdtOptions(const WdtOptions& src) {
+void WdtBase::setOptions(const BaseOptions& src) {
   options_.copyInto(src);
 }
 
