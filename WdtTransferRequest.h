@@ -176,13 +176,13 @@ struct WdtTransferRequest {
   /// Directory to write the data to (FileFile Worker)
   std::string destination;
 
-  /// The s3 bucket to use if needed (s3 workers)
+  /// The s3 bucket to use if needed (s3 movers)
   std::string s3Bucket;
 
-  /// s3 Access Key ID (s3 workers)
+  /// s3 Access Key ID (s3 movers)
   std::string s3AccessKey;
 
-  /// s3 Secret Access Key (s3 workers)
+  /// s3 Secret Access Key (s3 movers)
   std::string s3SecretKey;
 
   /// Only used for the sender and when not using directory discovery

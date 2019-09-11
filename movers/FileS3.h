@@ -3,9 +3,23 @@
 
 #include <wdt/WdtBase.h>
 #include <wdt/util/TransferLogManager.h>
+#include <wdt/util/S3Writer.h>
 #include <chrono>
 #include <iostream>
 #include <memory>
+
+#include <aws/core/Aws.h>
+#include <aws/s3/S3Client.h>
+#include <aws/s3/model/CreateMultipartUploadRequest.h>
+#include <aws/s3/model/CreateMultipartUploadResult.h>
+#include <aws/s3/model/CompleteMultipartUploadRequest.h>
+#include <aws/s3/model/CompleteMultipartUploadResult.h>
+#include <aws/s3/model/UploadPartRequest.h>
+#include <aws/s3/model/UploadPartResult.h>
+#include <aws/core/utils/StringUtils.h>
+#include <aws/core/client/ClientConfiguration.h>
+#include <aws/core/auth/AWSCredentials.h>
+#include <aws/core/auth/AWSCredentialsProvider.h>
 
 namespace facebook {
 namespace wdt {
@@ -46,63 +60,13 @@ class FileS3 : public WdtBase {
   Aws::S3::S3Client s3_client_;
   Aws::Client::ClientConfiguration clientConfig_;
 
-  class AwsObject {
-   public:
-    explicit AwsObject(int partNumber, int partTotal) :
-        partNumber_(partNumber),
-        partTotal_(partTotal),
-        partsLeft_(partTotal),
-        partStatus_(partTotal, false)
-      {
-    }
-
-
-    void markPartUploaded(int partNumber){
-        partsStatus.assign(partnumber, true);
-        partsLeft--;
-        uploadStarted = True;
-    }
-
-    void setMultipartKey(Aws::String multipartKey){
-        multipartKey_ = multipartKey;
-    }
-
-    Aws::String getMultipartKey(){
-        return multipartKey_;
-    }
-
-    void isFinished(){
-        return !(bool)partsLeft;
-    }
-
-   private:
-
-    /*
-    int partsLeft(){
-      int toUpload = 0;
-      for (int isUploaded : partsStatus_) {
-          if(!isuploaded){
-              toUpload++;
-          }
-      }
-      return toUpload;
-    }
-    */
-
-    bool uploadStarted{false};
-    bool uploadFinished{false};
-
-    int partNumber_;
-    int partTotal_
-    std:list<bool> partsStatus_;
-
-    Aws:String multipartKey{""};
-
-  };
+  AwsObjectTrackerType getAwsObjectTracker(){
+      return awsObjectTracker_;
+  }
 
   // keep track of what parts of the file are uploaded and when
   // to do the multipart open and close
-  std::unordered_map<std::string, AwsObject> awsObjectTracker_;
+  AwsObjectTrackerType awsObjectTracker_;
 
  private:
   friend class FileS3Thread;
@@ -206,6 +170,7 @@ class FileS3 : public WdtBase {
 
 
 };
+
 
 }
 }  // namespace facebook::wdt

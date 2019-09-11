@@ -1,5 +1,5 @@
 
-#include <wdt/workers/FileS3Thread.h>
+#include <wdt/movers/FileS3Thread.h>
 #include <folly/Conv.h>
 #include <folly/Memory.h>
 #include <folly/ScopeGuard.h>
@@ -25,11 +25,11 @@ void FileS3Thread::start() {
     return;
   }
 
-  controller_->executeAtStart([&]() { wdtParent_->startNewTransfer(); });
+  controller_->executeAtStart([&]() { moverParent_->startNewTransfer(); });
 
   FileS3State state = COPY_FILE_CHUNK;
   while (true) {
-    ErrorCode abortCode = wdtParent_->getCurAbortCode();
+    ErrorCode abortCode = moverParent_->getCurAbortCode();
     if (abortCode != OK) {
       WTLOG(ERROR) << "Transfer aborted " << " "
                    << errorCodeToStr(abortCode);
@@ -42,8 +42,8 @@ void FileS3Thread::start() {
     state = (this->*stateMap_[state])();
   }
   controller_->deRegisterThread(threadIndex_);
-  //controller_->executeAtEnd([&]() { wdtParent_->endCurGlobalSession(); });
-  controller_->executeAtEnd([&]() { wdtParent_->endCurTransfer(); });
+  //controller_->executeAtEnd([&]() { moverParent_->endCurGlobalSession(); });
+  controller_->executeAtEnd([&]() { moverParent_->endCurTransfer(); });
   //WTLOG(INFO) << threadStats_;
 }
 
@@ -103,6 +103,7 @@ TransferStats FileS3Thread::copyOneByteSource(
   const int64_t expectedSize = source->getSize();
   int64_t actualSize = 0;
   const SourceMetaData &metadata = source->getMetaData();
+  /*
   BlockDetails blockDetails;
   blockDetails.fileName = metadata.relPath;
   blockDetails.seqId = metadata.seqId;
@@ -113,11 +114,13 @@ TransferStats FileS3Thread::copyOneByteSource(
   blockDetails.dataSize = expectedSize;
   blockDetails.allocationStatus = metadata.allocationStatus;
   blockDetails.prevSeqId = metadata.prevSeqId;
+  */
 
 
-  WLOG(INFO) << " Read id:" << blockDetails.fileName
-            << " size:" << blockDetails.dataSize << " ooff:" << oldOffset_;
+  WLOG(INFO) << " Read id:" << metadata.relPath
+            << " size:" << expectedSize << " ooff:" << oldOffset_;
 
+  // FIXME: remove this loop?
   while (!source->finished()) {
     int64_t size;
     char *buffer = source->read(size);
@@ -128,7 +131,7 @@ TransferStats FileS3Thread::copyOneByteSource(
       break;
     }
 
-    auto throttler = wdtParent_->getThrottler();
+    auto throttler = moverParent_->getThrottler();
     if (throttler) {
         // We might be reading more than we require for this file but
         // throttling should make sense for any additional bytes received
@@ -136,27 +139,35 @@ TransferStats FileS3Thread::copyOneByteSource(
         throttler->limit(*threadCtx_, size);
     }
 
-    //////////////////////////////// AWS 
+    //////////////////////////////// AWS
 
-    if (!response.IsSuccess()) {
-        auto error = response.GetError();
-        WLOG(ERROR) << "S2 Start Multipart ERROR: " << error.GetExceptionName() << " -- "
-            << error.GetMessage();
-        WLOG(INFO) << "bucketname: !" << request.GetBucket() << "!";
+    S3Writer writer(*threadCtx_, *source, &*moverParent_);
+    if(!writer.open()){
         threadStats_.setLocalErrorCode(ABORT);
         stats.incrFailedAttempts();
         return stats;
     }
 
+    if(!writer.write(buffer, size)){
+        threadStats_.setLocalErrorCode(ABORT);
+        stats.incrFailedAttempts();
+        return stats;
+    }
 
-    WLOG(INFO) << "WOOT!!!!";
+    if(!writer.close()){
+        threadStats_.setLocalErrorCode(ABORT);
+        stats.incrFailedAttempts();
+        return stats;
+    }
+    stats.addDataBytes(size);
+
     // TODO: actually validate the etag
     //
-    //////////////////////////////// AWS 
+    //////////////////////////////// AWS
 
-    if (wdtParent_->getCurAbortCode() != OK) {
+    if (moverParent_->getCurAbortCode() != OK) {
         WTLOG(ERROR) << "Thread marked for abort while processing "
-                    << blockDetails.fileName << " " << blockDetails.seqId;
+                    << metadata.relPath << " " << metadata.seqId;
         threadStats_.setLocalErrorCode(ABORT);
         return stats;
     }
@@ -172,7 +183,7 @@ TransferStats FileS3Thread::copyOneByteSource(
     return stats;
   }
 
-  WVLOG(2) << "completed " << blockDetails.fileName;
+  WVLOG(2) << "completed " << metadata.relPath;
   stats.setLocalErrorCode(OK);
   stats.incrNumBlocks();
   stats.addEffectiveBytes(0, stats.getDataBytes());
@@ -191,7 +202,7 @@ FileS3State FileS3Thread::finishWithError() {
 
   auto cv = controller_->getCondition(0);//FIXME
   auto guard = cv->acquire();
-  wdtParent_->addCheckpoint(checkpoint_);
+  moverParent_->addCheckpoint(checkpoint_);
   controller_->markState(threadIndex_, FINISHED);
   guard.notifyOne();
   return END;
@@ -204,7 +215,7 @@ std::ostream &operator<<(std::ostream &os, const FileS3Thread &workerThread) {
 }
 
 ErrorCode FileS3Thread::getThreadAbortCode() {
-  ErrorCode globalAbortCode = wdtParent_->getCurAbortCode();
+  ErrorCode globalAbortCode = moverParent_->getCurAbortCode();
   if (globalAbortCode != OK) {
     return globalAbortCode;
   }

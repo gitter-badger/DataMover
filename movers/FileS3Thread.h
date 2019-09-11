@@ -1,10 +1,11 @@
 
 #pragma once
 #include <folly/Conv.h>
-#include <wdt/workers/FileS3.h>
 #include <wdt/WdtBase.h>
 #include <wdt/WdtThread.h>
+#include <wdt/movers/FileS3.h>
 #include <wdt/util/ThreadTransferHistory.h>
+#include <wdt/util/S3Writer.h>
 #include <thread>
 
 namespace facebook {
@@ -52,7 +53,7 @@ class FileS3Thread : public WdtThread {
             worker->options_, threadIndex, port,
             worker->getProtocolVersion(),
             threadsController),
-        wdtParent_(worker),
+        moverParent_(worker),
         dirQueue_(worker->dirQueue_.get()),
         transferHistoryController_(worker->transferHistoryController_.get()) {
 
@@ -94,7 +95,7 @@ class FileS3Thread : public WdtThread {
   friend std::ostream &operator<<(std::ostream &os,
                                   const FileS3Thread &workerThread);
 
-  FileS3 *wdtParent_;
+  FileS3 *moverParent_;
 
   void setFooterType();
 

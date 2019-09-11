@@ -47,7 +47,7 @@ class FileByteSource : public ByteSource {
    *                          truncate, if it's smaller we'll fail
    * @param offset            block offset
    */
-  FileByteSource(SourceMetaData *metadata, int64_t size, int64_t offset, int64_t blockNumber, int64_t blockNumber);
+  FileByteSource(SourceMetaData *metadata, int64_t size, int64_t offset, int64_t blockNumber, int64_t blockTotal);
 
   /// close file descriptor if still open
   ~FileByteSource() override {
@@ -64,26 +64,16 @@ class FileByteSource : public ByteSource {
     return size_;
   }
 
-  /// @return block number 
-  int64_t getBlockNumber() const override {
-    return blockNumber_;
-  }
-
-  /// @return total blocks
-  int64_t getBlockTotal() const override {
-    return blockTotal_;
-  }
-
   /// @return offset from which to start reading
   int64_t getOffset() const override {
     return offset_;
   }
 
-  int64_t getBlockNumber(){
+  int64_t getBlockNumber() const override {
     return blockNumber_;
   }
 
-  int64_t getBlockTotal(){
+  int64_t getBlockTotal() const override {
     return blockTotal_;
   }
 

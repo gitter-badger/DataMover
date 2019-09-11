@@ -1,6 +1,6 @@
 
-#include <wdt/workers/FileS3.h>
-#include <wdt/workers/FileS3Thread.h>
+#include <wdt/movers/FileS3.h>
+#include <wdt/movers/FileS3Thread.h>
 #include <wdt/Throttler.h>
 
 #include <folly/lang/Bits.h>
@@ -99,9 +99,11 @@ ErrorCode FileS3::start() {
   threadsController_->setNumBarriers(FileS3Thread::NUM_BARRIERS);
   threadsController_->setNumFunnels(FileS3Thread::NUM_FUNNELS);
   threadsController_->setNumConditions(FileS3Thread::NUM_CONDITIONS);
+
   // TODO: fix this ! use transferRequest! (and dup from Receiver)
   workerThreads_ = threadsController_->makeThreads<FileS3, FileS3Thread>(
       this, transferRequest_.ports.size(), transferRequest_.ports);
+
   if (downloadResumptionEnabled_ && deleteExtraFiles) {
     dirQueue_->enableFileDeletion();
   }
@@ -127,21 +129,30 @@ bool FileS3::hasNewTransferStarted() const {
 const WdtTransferRequest &FileS3::init() {
 
   // If this is not done AWS core dumps
-  Aws::SDKOptions awsOptions;
-  Aws::InitAPI(awsOptions);
+  //
 
-  clientConfig_.region = options_.region;
+  WLOG(INFO) << "HI!!!!!";
+  Aws::Client::ClientConfiguration awsClientConfig;
+  clientConfig_.region = options_.awsRegion;
+  WLOG(INFO) << options_.awsRegion;
   clientConfig_.scheme = Aws::Http::Scheme::HTTP;
   clientConfig_.endpointOverride = options_.awsEndpointOverride;
+  WLOG(INFO) << options_.awsEndpointOverride;
   clientConfig_.verifySSL = options_.awsVerifySSL;
-  clientConfig._maxConnections = options_.awsMaxConnections;
+  WLOG(INFO) << options_.awsVerifySSL;
+  clientConfig_.maxConnections = options_.awsMaxConnections;
+  WLOG(INFO) << options_.awsMaxConnections;
 
-  awsClientCreds_ = Aws::Auth::AWSCredentials(
+  Aws::Auth::AWSCredentials awsClientCreds(
     options_.awsAccessKeyId,
     options_.awsSecretAccessKey
   );
+  WLOG(INFO) << "auth created";
+  WLOG(INFO) << options_.awsAccessKeyId;
+  WLOG(INFO) << options_.awsSecretAccessKey;
 
-  s3_client_ Aws::S3::S3Client(awsClientCreds, awsClientConfig, Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never, false);
+  Aws::S3::S3Client s3_client_(awsClientCreds, awsClientConfig, Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never, false);
+  WLOG(INFO) << "CONNECTED";
 
   // set up directory queue
   dirQueue_.reset(new DirectorySourceQueue(options_, transferRequest_.directory,

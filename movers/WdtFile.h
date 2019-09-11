@@ -8,7 +8,7 @@
  */
 #pragma once
 
-#include <wdt/workers/WdtFileThread.h>
+#include <wdt/movers/WdtFileThread.h>
 #include <wdt/WdtBase.h>
 #include <wdt/util/FileCreator.h>
 #include <wdt/util/IServerSocket.h>

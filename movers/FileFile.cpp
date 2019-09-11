@@ -1,6 +1,6 @@
 
-#include <wdt/workers/FileFile.h>
-#include <wdt/workers/FileFileThread.h>
+#include <wdt/movers/FileFile.h>
+#include <wdt/movers/FileFileThread.h>
 #include <wdt/Throttler.h>
 
 #include <folly/lang/Bits.h>

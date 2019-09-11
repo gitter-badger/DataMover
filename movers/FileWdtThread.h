@@ -8,7 +8,7 @@
  */
 #pragma once
 #include <folly/Conv.h>
-#include <wdt/workers/FileWdt.h>
+#include <wdt/movers/FileWdt.h>
 #include <wdt/WdtThread.h>
 #include <wdt/util/IClientSocket.h>
 #include <wdt/util/ThreadTransferHistory.h>

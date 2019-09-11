@@ -64,7 +64,8 @@ class ByteSource {
   virtual int64_t getSize() const = 0;
 
   /// @return block number 
-  virtual int64_t getBlockNum() const = 0;
+  virtual int64_t getBlockNumber() const = 0;
+  virtual int64_t getBlockTotal() const = 0;
 
   /// @return offset from which to start reading
   virtual int64_t getOffset() const = 0;

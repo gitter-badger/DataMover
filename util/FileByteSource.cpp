@@ -56,11 +56,13 @@ int FileUtil::openForRead(ThreadCtx &threadCtx, const std::string &filename,
 FileByteSource::FileByteSource(SourceMetaData *metadata,
                                int64_t size,
                                int64_t offset,
-                               int64_t blockNum)
+                               int64_t blockNumber,
+                               int64_t blockTotal)
     : metadata_(metadata),
       size_(size),
       offset_(offset),
-      blockNum_(blockNum),
+      blockNumber_(blockNumber),
+      blockTotal_(blockTotal),
       bytesRead_(0),
       alignedReadNeeded_(false) {
   transferStats_.setId(getIdentifier());

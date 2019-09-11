@@ -7,7 +7,7 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  */
 #include <wdt/util/ThreadTransferHistory.h>
-#include <wdt/workers/FileWdt.h> //FIXME
+#include <wdt/movers/FileWdt.h> //FIXME
 
 namespace facebook {
 namespace wdt {

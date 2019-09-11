@@ -518,13 +518,13 @@ void DirectorySourceQueue::createIntoQueueInternal(SourceMetaData *metadata) {
   metadata->allocationStatus = allocationStatus;
 
   int blockNumber = 0;
-  int blockTotal = remaininChunks.size();
+  int blockTotal = remainingChunks.size();
   for (const auto &chunk : remainingChunks) {
     int64_t offset = chunk.start_;
     int64_t remainingBytes = chunk.size();
     do {
       const int64_t size = std::min<int64_t>(remainingBytes, blockSize);
-      WLOG(INFO) << "Chunk number: " << blockNum << " " << metadata->relPath;
+      WLOG(INFO) << "Chunk number: " << blockNumber << " " << metadata->relPath;
       std::unique_ptr<ByteSource> source =
           std::make_unique<FileByteSource>(metadata, size, offset, blockNumber, blockTotal);
       sourceQueue_.push(std::move(source));
@@ -652,7 +652,7 @@ void DirectorySourceQueue::enqueueFilesToBeDeleted() {
     sharedFileData_.emplace_back(metadata);
     // create a byte source with size and offset equal to 0
     std::unique_ptr<ByteSource> source =
-        std::make_unique<FileByteSource>(metadata, 0, 0, 0);
+        std::make_unique<FileByteSource>(metadata, 0, 0, 0, 0);
     sourceQueue_.push(std::move(source));
     numFilesToBeDeleted++;
   }

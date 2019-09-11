@@ -46,8 +46,8 @@ set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 # So hardcoding for now:
 set(CMAKE_BUILD_TYPE Debug)
 #set(CMAKE_BUILD_TYPE Release)
-#set(CMAKE_CXX_FLAGS "-Wall -ggdb -msse4.2 -mpclmul -fsanitize=address")
-set(CMAKE_CXX_FLAGS "-Wall -ggdb -msse4.2 -mpclmul")
+set(CMAKE_CXX_FLAGS "-Wall -ggdb -msse4.2 -mpclmul -fsanitize=address")
+#set(CMAKE_CXX_FLAGS "-Wall -ggdb -msse4.2 -mpclmul")
 #set(CMAKE_CXX_FLAGS "-msse4.2 -mpclmul -Wextra -Wsign-compare -Wunused-variable")
 #set(CMAKE_CXX_FLAGS "-msse4.2 -mpclmul -Wextra -Wsign-compare -Wunused-variable -Wconversion -Wsign-conversion")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "_bin/wdt")
@@ -91,6 +91,7 @@ util/Stats.cpp
 util/ClientSocket.cpp
 util/ThreadTransferHistory.cpp
 util/FileWriter.cpp
+util/S3Writer.cpp
 util/DirectorySourceQueue.cpp
 util/SerializationUtil.cpp
 util/WdtSocket.cpp
@@ -103,14 +104,14 @@ Reporting.cpp
 Throttler.cpp
 ErrorCodes.cpp
 WdtThread.cpp
-workers/WdtFile.cpp
-workers/FileWdtThread.cpp
-workers/FileFileThread.cpp
-workers/WdtFileThread.cpp
-workers/FileFile.cpp
-workers/FileWdt.cpp
-workers/FileS3.cpp
-workers/FileS3Thread.cpp
+movers/WdtFile.cpp
+movers/FileWdtThread.cpp
+movers/FileFileThread.cpp
+movers/WdtFileThread.cpp
+movers/FileFile.cpp
+movers/FileWdt.cpp
+movers/FileS3.cpp
+movers/FileS3Thread.cpp
 WdtBase.cpp
 Protocol.cpp
 )
@@ -123,37 +124,6 @@ TARGET_LINK_LIBRARIES(wdt_min
     aws-checksums
 )
 
-#add_library(wdt_min
-#util/WdtSocket.cpp
-#util/ClientSocket.cpp
-#util/EncryptionUtils.cpp
-#util/DirectorySourceQueue.cpp
-#ErrorCodes.cpp
-#util/FileByteSource.cpp
-#util/FileCreator.cpp
-#Protocol.cpp
-#WdtThread.cpp
-#util/ThreadsController.cpp
-#workers/WdtFileThread.cpp
-#workers/WdtFile.cpp
-#WdtTransferRequest.cpp
-#Reporting.cpp
-#util/ThreadTransferHistory.cpp
-#workers/FileWdtThread.cpp
-#workers/FileWdt.cpp
-#util/ServerSocket.cpp
-#Throttler.cpp
-#WdtOptions.cpp
-#util/FileWriter.cpp
-#util/TransferLogManager.cpp
-#util/SerializationUtil.cpp
-#util/Stats.cpp
-#WdtBase.cpp
-#WdtResourceController.cpp
-#util/CommonImpl.cpp
-#workers/FileFileThread.cpp
-#workers/FileFile.cpp
-#)
 # Source files that depend on gflags and provide flags -> options init
 set (WDT_FLAGS_RELATED_SRC
 util/WdtFlags.cpp
@@ -285,7 +255,7 @@ endforeach()
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/util" DESTINATION include/wdt
         FILES_MATCHING PATTERN "*.h")
 
-install(DIRECTORY "${PROJECT_SOURCE_DIR}/workers" DESTINATION include/wdt
+install(DIRECTORY "${PROJECT_SOURCE_DIR}/movers" DESTINATION include/wdt
         FILES_MATCHING PATTERN "*.h")
 
 # wcp script

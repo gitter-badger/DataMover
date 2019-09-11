@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <wdt/WdtConfig.h>
 #include <wdt/util/EncryptionUtils.h>
+#include <aws/core/utils/StringUtils.h>
 #include <cstdint>
 #include <set>
 #include <string>
@@ -419,14 +420,29 @@ class WdtOptions {
    */
   ThrottlerOptions getThrottlerOptions() const;
 
-  // Move options to to inharited classes?? worth it?
+  // The AWS region you are connecting to. This is almost always only needed when connecting
+  // to the actual Amazon AWS servers. Otherwise it should remain "us-east-1".
   Aws::String awsRegion{"us-east-1"};
+
+  // The s3 destination enpdoing you are connecting to, this should include the port, even if its 80 or 443.
   Aws::String awsEndpointOverride{""};
+
+  // If the ssl cert should be verified or not.
   bool awsVerifySSL{false};
+
+  // Total number of simultaneous connections allowed by the s3 client.
   int awsMaxConnections{128};
+
+  // Effectively the username you are connectiong to s3 as.
   Aws::String awsAccessKeyId{""};
+
+  // The secret access key used to authenticate you, basicly your s3 password.
   Aws::String awsSecretAccessKey{""};
+
+  // The s3 bucket you are going to use.
   Aws::String awsBucket{""};
+
+  // Forces all objects to be uploaded as multipart objects even if they are under the threshold.
   bool awsForceMultipartObjects{true};
 
 

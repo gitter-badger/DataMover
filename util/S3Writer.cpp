@@ -6,13 +6,19 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
+
+#include <list>
+#include <string>
+
 #include <wdt/util/S3Writer.h>
 #include <wdt/util/CommonImpl.h>
+#include <wdt/movers/FileS3.h>
 
 #include <fcntl.h>
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 #include <sys/types.h>
+
 
 namespace facebook {
 namespace wdt {
@@ -22,122 +28,115 @@ S3Writer::~S3Writer() {
   // caller should always call sync() and close() manually to check the error
   // code.
   if (!isClosed()) {
-    WLOG(ERROR ) << "File " << blockDetails_->fileName
-                 << " was not closed and needed to be closed in the dtor";
+    WLOG(ERROR ) << "File " << source_.getIdentifier()
+                 << " was not closed and needed to be closed in the S3Writer";
     close();
   }
 }
 
-ErrorCode S3Writer::open() {
-  if (threadCtx_.getOptions().skip_writes) {
-    return OK;
-  }
-  return OK;
-}
-
-ErrorCode S3Writer::close() {
-
-  return OK;
-}
-
-bool S3Writer::isClosed() {
-}
-
-ErrorCode S3Writer::write(char *buf, int64_t size) {
+bool S3Writer::open() {
   auto &options = threadCtx_.getOptions();
   if (options.skip_writes) {
     return OK;
   }
+  //std::lock_guard<std::mutex> lock(awsObjectMutex_);
+
+  auto object = moverParent_->awsObjectTracker_.find(source_.getIdentifier());
+  if (object != moverParent_->awsObjectTracker_.end()) {
+      activeObject_ = AwsObject(source_.getBlockNumber(), source_.getBlockTotal());
+      moverParent_->awsObjectTracker_.emplace(source_.getIdentifier(), activeObject_);
+  }else{
+      activeObject_ = moverParent_->awsObjectTracker_.at(source_.getIdentifier());
+  }
+
+  if(!activeObject_.isStarted()){
+    Aws::S3::Model::CreateMultipartUploadRequest request;
+    request.SetBucket(options.awsBucket);
+    request.SetKey(source_.getIdentifier().c_str());
+
+    auto response = moverParent_->s3_client_.CreateMultipartUpload(request);
+    if (response.IsSuccess()) {
+      activeObject_.markStarted();
+    }else{
+      auto error = response.GetError();
+      WLOG(ERROR) << "AWS Create Multipart Upload ERROR: " << error.GetExceptionName() << " -- "
+          << error.GetMessage() << " -- " << request.GetBucket();
+    }
+    return response.IsSuccess();
+  }
+  // FIXME
+  return true;
+}
+
+bool S3Writer::isClosed(){
+    activeObject_.isClosed();
+}
+
+bool S3Writer::close() {
+  auto &options = threadCtx_.getOptions();
+  if (options.skip_writes) {
+    return OK;
+  }
+  //std::lock_guard<std::mutex> lock(awsObjectMutex_);
+
+    Aws::S3::Model::CompletedMultipartUpload completed;
+    Aws::S3::Model::CompletedPart completedPart;
+    completedPart.SetPartNumber(source_.getBlockNumber());
+    //completedPart.SetETag(result.GetETag());
+    Aws::Vector<Aws::S3::Model::CompletedPart> completed_parts = {completedPart};
+    completed.SetParts(completed_parts);
+
+    Aws::S3::Model::CompleteMultipartUploadRequest request;
+    request.SetBucket(options.awsBucket);
+    request.SetKey(source_.getIdentifier().c_str());
+    request.SetUploadId(activeObject_.getMultipartKey());
+    request.SetMultipartUpload(completed);
+
+    auto response = moverParent_->s3_client_.CompleteMultipartUpload(request);
+    if (response.IsSuccess()) {
+      activeObject_.markClosed();
+    }else{
+      auto error = response.GetError();
+      WLOG(ERROR) << "AWS Create Multipart Upload ERROR: " << error.GetExceptionName() << " -- "
+          << error.GetMessage() << " -- " << request.GetBucket();
+    }
+    return response.IsSuccess();
+  return OK;
+}
+
+bool S3Writer::write(char *buffer, int64_t size) {
+  auto &options = threadCtx_.getOptions();
+  if (options.skip_writes) {
+    return OK;
+  }
+  // Dont need a mutex lock as the dirqueue should never give
+  // The same file block to more then one thread
+
+  // TODO: do we care if this part was already marked as uploaded? I think so
     const std::shared_ptr<Aws::IOStream> request_body =
         Aws::MakeShared<Aws::StringStream>("");
 
     *request_body << buffer;
 
-  totalWritten_ += size;
-  return OK;
-}
-
-ErrorCode S3Writer::writeObject(char *buf, int64_t size) {
-}
-
-ErrorCode S3Writer::startMultipartObject(char *buf, int64_t size) {
-    Aws::S3::Model::CreateMultipartUploadRequest cmu_request;
-    cmu_request.SetBucket(bucket); /// FIXME
-    cmu_request.SetKey(blockDetails.fileName.c_str());
-
-    Aws::S3::Model::CreateMultipartUploadOutcome cmu_response = s3_client.CreateMultipartUpload(cmu_request);
-
-    if (!cmu_response.IsSuccess()) {
-        auto error = cmu_response.GetError();
-        WLOG(ERROR) << "cmu s3 ERROR: " << error.GetExceptionName() << " -- "
-            << error.GetMessage();
-        WLOG(INFO) << "bucketname: !" << cmu_request.GetBucket() << "!";
-        threadStats_.setLocalErrorCode(ABORT);
-        stats.incrFailedAttempts();
-        return stats;
-    }
-}
-
-ErrorCode S3Writer::writeMultipartObject(char *buf, int64_t size) {
-    Aws::S3::Model::CreateMultipartUploadResult cmu_result;
-    cmu_result = cmu_response.GetResult();
-    WLOG(INFO) << "Upload ID: " << cmu_result.GetUploadId();
-
-    WLOG(INFO) << "Block num: " << source->getBlockNum();
     Aws::S3::Model::UploadPartRequest request;
-    request.SetBucket(bucket);
-    request.SetKey(blockDetails.fileName.c_str());
-    request.SetUploadId(cmu_result.GetUploadId());
-    request.SetPartNumber(source->getBlockNum());
+    request.SetBucket(options.awsBucket);
+    request.SetKey(source_.getIdentifier().c_str());
+    request.SetUploadId(activeObject_.getMultipartKey());
+    request.SetPartNumber(source_.getBlockNumber());
     request.SetBody(request_body);
 
-    Aws::S3::Model::UploadPartOutcome response = s3_client.UploadPart(request);
-    stats.addDataBytes(size);
+    auto response = moverParent_->s3_client_.UploadPart(request);
 
-    if (!response.IsSuccess()) {
-        auto error = response.GetError();
-        WLOG(ERROR) << "s3 ERROR: " << error.GetExceptionName() << " -- "
-            << error.GetMessage();
-        WLOG(INFO) << "bucketname: !" << request.GetBucket() << "!";
-        threadStats_.setLocalErrorCode(ABORT);
-        stats.incrFailedAttempts();
-        // virtual Model::AbortMultipartUploadOutcome Aws::S3::S3Client::AbortMultipartUpload   (   const Model::AbortMultipartUploadRequest &     request )   const
-        return stats;
+    if (response.IsSuccess()) {
+      activeObject_.markPartUploaded(source_.getBlockNumber());
+      totalWritten_ += size;
+    }else{
+      auto error = response.GetError();
+      WLOG(ERROR) << "AWS Create Multipart Upload ERROR: " << error.GetExceptionName() << " -- "
+          << error.GetMessage() << " -- " << request.GetBucket();
     }
 
-    Aws::S3::Model::UploadPartResult result;
-    result = response.GetResult();
-    WLOG(INFO) << "File Name: " << blockDetails.fileName << " MD5: " << result.GetETag();
-
-}
-
-ErrorCode S3Writer::finishMultipartObject(char *buf, int64_t size) {
-
-    Aws::S3::Model::CompletedMultipartUpload completed;
-    Aws::S3::Model::CompletedPart completedPart;
-    completedPart.SetPartNumber(source->getBlockNum());
-    completedPart.SetETag(result.GetETag());
-    Aws::Vector<Aws::S3::Model::CompletedPart> completed_parts = {completedPart};
-    completed.SetParts(completed_parts);
-
-    Aws::S3::Model::CompleteMultipartUploadRequest complete_request;
-    complete_request.SetBucket(bucket);
-    complete_request.SetKey(blockDetails.fileName.c_str());
-    complete_request.SetUploadId(cmu_result.GetUploadId());
-    complete_request.SetMultipartUpload(completed);
-
-    Aws::S3::Model::CompleteMultipartUploadOutcome complete_response = s3_client.CompleteMultipartUpload(complete_request);
-    if (!complete_response.IsSuccess()) {
-        auto error = complete_response.GetError();
-        WLOG(ERROR) << "complete s3 ERROR: " << error.GetExceptionName() << " -- "
-            << error.GetMessage();
-        WLOG(INFO) << "bucketname: !" << request.GetBucket() << "!";
-        threadStats_.setLocalErrorCode(ABORT);
-        stats.incrFailedAttempts();
-        // virtual Model::AbortMultipartUploadOutcome Aws::S3::S3Client::AbortMultipartUpload   (   const Model::AbortMultipartUploadRequest &     request )   const
-        return stats;
-    }
-    WLOG(INFO) << "File Name: " << blockDetails.fileName << " MD5: " << result.GetETag();
+  return true;
 }
 
 }
