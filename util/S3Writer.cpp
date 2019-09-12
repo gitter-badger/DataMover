@@ -42,7 +42,7 @@ bool S3Writer::open() {
   //std::lock_guard<std::mutex> lock(awsObjectMutex_);
 
   auto object = moverParent_->awsObjectTracker_.find(source_.getIdentifier());
-  if (object != moverParent_->awsObjectTracker_.end()) {
+  if (object == moverParent_->awsObjectTracker_.end()) {
       activeObject_ = AwsObject(source_.getBlockNumber(), source_.getBlockTotal());
       moverParent_->awsObjectTracker_.emplace(source_.getIdentifier(), activeObject_);
   }else{

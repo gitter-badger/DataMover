@@ -6,7 +6,6 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
-#include <aws/core/Aws.h>
 #include <wdt/WdtBase.h>
 #include <wdt/WdtTransferRequest.h>
 #include <random>
@@ -18,8 +17,7 @@ namespace wdt {
 // TODO: force callers to pass options in
 WdtBase::WdtBase() : abortCheckerCallback_(this) {
   // FIXME need to move this our of the base class
-  Aws::SDKOptions awsOptions;
-  Aws::InitAPI(awsOptions);
+
   options_.copyInto(WdtOptions::get());
 }
 

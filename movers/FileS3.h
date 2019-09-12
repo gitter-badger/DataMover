@@ -93,6 +93,7 @@ class FileS3 : public WdtBase {
   class QueueAbortChecker : public IAbortChecker {
    public:
     explicit QueueAbortChecker(FileS3 *worker) : worker_(worker) {
+        WLOG(INFO) << "In AQC";
     }
 
     bool shouldAbort() const override {

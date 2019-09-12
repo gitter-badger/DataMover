@@ -13,6 +13,7 @@
 namespace facebook {
 namespace wdt {
 
+
 void FileS3::endCurTransfer() {
   endTime_ = Clock::now();
   WLOG(INFO) << "Last thread finished "
