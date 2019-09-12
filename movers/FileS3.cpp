@@ -133,18 +133,16 @@ const WdtTransferRequest &FileS3::init() {
   //
 
   WLOG(INFO) << "HI!!!!!";
-  Aws::Client::ClientConfiguration awsClientConfig;
-  clientConfig_.region = options_.awsRegion;
-  WLOG(INFO) << options_.awsRegion;
-  clientConfig_.scheme = Aws::Http::Scheme::HTTP;
-  clientConfig_.endpointOverride = options_.awsEndpointOverride;
-  WLOG(INFO) << options_.awsEndpointOverride;
-  clientConfig_.verifySSL = options_.awsVerifySSL;
-  WLOG(INFO) << options_.awsVerifySSL;
-  clientConfig_.maxConnections = options_.awsMaxConnections;
-  WLOG(INFO) << options_.awsMaxConnections;
+  //awsClientConfig_ = new Aws::Client::ClientConfiguration;
+  awsClientConfig_.region = options_.awsRegion;
+  awsClientConfig_.scheme = Aws::Http::Scheme::HTTP;
+  awsClientConfig_.endpointOverride = options_.awsEndpointOverride;
+  awsClientConfig_.verifySSL = options_.awsVerifySSL;
+  awsClientConfig_.maxConnections = options_.awsMaxConnections;
+  awsClientConfig_.requestTimeoutMs = 5 * 60 * 1000;
+  awsClientConfig_.connectTimeoutMs = 30 * 1000;
 
-  Aws::Auth::AWSCredentials awsClientCreds(
+  Aws::Auth::AWSCredentials awsClientCreds_(
     options_.awsAccessKeyId,
     options_.awsSecretAccessKey
   );
@@ -152,13 +150,18 @@ const WdtTransferRequest &FileS3::init() {
   WLOG(INFO) << options_.awsAccessKeyId;
   WLOG(INFO) << options_.awsSecretAccessKey;
 
-  Aws::S3::S3Client s3_client_(awsClientCreds, awsClientConfig, Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never, false);
+  WLOG(INFO) << awsClientConfig_.endpointOverride;
+  //s3_client_ = new Aws::S3::S3Client s3_client_(awsClientCreds_,
+  s3_client_ = Aws::S3::S3Client(awsClientCreds_,
+                               awsClientConfig_,
+                               Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,
+                               false);
   WLOG(INFO) << "CONNECTED";
 
   // set up directory queue
   dirQueue_.reset(new DirectorySourceQueue(options_, transferRequest_.directory,
                                            &queueAbortChecker_));
-  WVLOG(3) << "Configuring the  directory queue";
+  WLOG(INFO) << "Configuring the  directory queue";
   dirQueue_->setIncludePattern(options_.include_regex);
   dirQueue_->setExcludePattern(options_.exclude_regex);
   dirQueue_->setPruneDirPattern(options_.prune_dir_regex);

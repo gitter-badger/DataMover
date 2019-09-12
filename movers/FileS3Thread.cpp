@@ -159,7 +159,6 @@ TransferStats FileS3Thread::copyOneByteSource(
         stats.incrFailedAttempts();
         return stats;
     }
-    stats.addDataBytes(size);
 
     // TODO: actually validate the etag
     //
@@ -173,6 +172,7 @@ TransferStats FileS3Thread::copyOneByteSource(
     }
 
     actualSize += size;
+    stats.addDataBytes(size);
   }
 
   if (getThreadAbortCode() != OK) {

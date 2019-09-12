@@ -518,13 +518,22 @@ void DirectorySourceQueue::createIntoQueueInternal(SourceMetaData *metadata) {
   metadata->allocationStatus = allocationStatus;
 
   int blockNumber = 0;
-  int blockTotal = remainingChunks.size();
   for (const auto &chunk : remainingChunks) {
     int64_t offset = chunk.start_;
     int64_t remainingBytes = chunk.size();
+    int64_t blockTotal;
+    if(remainingBytes <= blockSize){
+        blockTotal = 1;
+    }else{
+        blockTotal = (remainingBytes / blockSize);
+        int64_t remainder = (remainingBytes % blockSize);
+        if(remainder > 0){
+            blockTotal++;
+        }
+    }
     do {
       const int64_t size = std::min<int64_t>(remainingBytes, blockSize);
-      WLOG(INFO) << "Chunk number: " << blockNumber << " " << metadata->relPath;
+      WLOG(INFO) << "Chunk number: " << blockNumber << " Total: " << blockTotal << " " << metadata->relPath;
       std::unique_ptr<ByteSource> source =
           std::make_unique<FileByteSource>(metadata, size, offset, blockNumber, blockTotal);
       sourceQueue_.push(std::move(source));

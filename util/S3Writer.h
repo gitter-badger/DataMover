@@ -8,8 +8,9 @@
  */
 #pragma once
 
-#include <list>
+#include <unordered_map>
 #include <string>
+#include <memory>
 
 #include <wdt/util/CommonImpl.h>
 #include <wdt/ByteSource.h>
@@ -35,25 +36,39 @@ class FileS3;
 
 class AwsObject {
   public:
-    explicit AwsObject(int partNumber, int partTotal) :
-        partNumber_(partNumber),
-        partTotal_(partTotal),
-        partsLeft_(partTotal),
-        partsStatus_(partTotal, false)
-      {
-    }
-    AwsObject(){}
+    // FIXME
+    int partNumber_{0};
+    int partsLeft_{0};
+    int partTotal_{0};
+    int partsDone_{0};
 
-    void markPartUploaded(int partNumber){
-        partsStatus_.assign(partNumber, true);
+    explicit AwsObject(int partNumber, int partTotal) {
+        partNumber_ = partNumber;
+        partsLeft_ = partTotal;
+        partTotal_ = partTotal;
+        WLOG(INFO) << "IN AO LEFT arg: " << partTotal;
+        WLOG(INFO) << "IN AO LEFT: " << partsLeft_;
+    }
+    AwsObject(){};
+
+
+    void markPartUploaded(int partNumber, Aws::String etag){
+        //std::lock_guard<std::mutex> lock(activeMutex_);
+        WLOG(INFO) << "MARKING: " << partNumber << " ETag: " << etag;
+        partsStatus_[partNumber] = etag;
+        WLOG(INFO) << "CHECKING: " << partsStatus_[partNumber];
+        WLOG(INFO) << "PARTS LEFT: " << partsLeft_;
         partsLeft_--;
+        partsDone_++;
     }
 
     void markStarted(){
+        //std::lock_guard<std::mutex> lock(activeMutex_);
         uploadStarted_ = true;
     }
 
     void markClosed(){
+        //std::lock_guard<std::mutex> lock(activeMutex_);
         isClosed_ = true;
     }
 
@@ -61,7 +76,21 @@ class AwsObject {
         return uploadStarted_;
     }
 
+    int getPartsLeft(){
+        return partsLeft_;
+    }
+
+    Aws::String getPartEtag(int partNumber){
+        auto object = partsStatus_.find(partNumber);
+        if (object != partsStatus_.end()) {
+            return partsStatus_[partNumber];
+        }
+        // FIXME should never happen should error out
+        return "";
+    }
+
     void setMultipartKey(Aws::String multipartKey){
+        //std::lock_guard<std::mutex> lock(activeMutex_);
         multipartKey_ = multipartKey;
     }
 
@@ -70,23 +99,27 @@ class AwsObject {
     }
 
     bool isFinished(){
-        return !(bool)partsLeft_;
+        WLOG(INFO) << "############# PARTS LEFT: " << partsLeft_;
+        WLOG(INFO) << "############# PARTS DONE: " << partsDone_;
+        if(partsLeft_ > 0){
+            return false;
+        }
+        return true;
     }
 
     bool isClosed(){
         return isClosed_;
     }
 
+    //std::mutex activeMutex_;
+
    private:
 
     bool uploadStarted_{false};
 
-    int partNumber_;
-    int partTotal_;
-    int partsLeft_;
     bool isClosed_{false};
 
-    std::list<bool> partsStatus_;
+    std::unordered_map<int, Aws::String> partsStatus_;
 
     Aws::String multipartKey_{""};
 
@@ -104,6 +137,7 @@ class S3Writer {
       threadCtx_(threadCtx),
       source_(source),
       moverParent_(moverParent) {
+          WLOG(INFO) << "Starting writer";
   }
 
   ~S3Writer();

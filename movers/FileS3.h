@@ -58,7 +58,7 @@ class FileS3 : public WdtBase {
 
   Aws::Auth::AWSCredentials awsClientCreds_;
   Aws::S3::S3Client s3_client_;
-  Aws::Client::ClientConfiguration clientConfig_;
+  Aws::Client::ClientConfiguration awsClientConfig_;
 
   AwsObjectTrackerType getAwsObjectTracker(){
       return awsObjectTracker_;

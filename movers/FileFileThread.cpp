@@ -154,8 +154,6 @@ TransferStats FileFileThread::copyOneByteSource(
         return stats;
     }
 
-    stats.addDataBytes(size);
-
     if (wdtParent_->getCurAbortCode() != OK) {
         WTLOG(ERROR) << "Thread marked for abort while processing "
                     << blockDetails.fileName << " " << blockDetails.seqId;
@@ -163,6 +161,7 @@ TransferStats FileFileThread::copyOneByteSource(
         return stats;
     }
 
+    stats.addDataBytes(size);
     actualSize += size;
   }
 
