@@ -36,34 +36,26 @@ class FileS3;
 
 class AwsObject {
   public:
-    // FIXME
-    int partNumber_{0};
-    int partsLeft_{0};
-    int partTotal_{0};
-    int partsDone_{0};
 
-    explicit AwsObject(int partNumber, int partTotal) {
-        partNumber_ = partNumber;
-        partsLeft_ = partTotal;
-        partTotal_ = partTotal;
-    }
+    explicit AwsObject(int partNumber, int partTotal) :
+        partNumber_(partNumber),
+        partsLeft_(partTotal),
+        partTotal_(partTotal) {}
+
     AwsObject(){};
 
 
     void markPartUploaded(int partNumber, Aws::String etag){
-        //std::lock_guard<std::mutex> lock(activeMutex_);
         partsStatus_[partNumber] = etag;
         partsLeft_--;
         partsDone_++;
     }
 
     void markStarted(){
-        //std::lock_guard<std::mutex> lock(activeMutex_);
         uploadStarted_ = true;
     }
 
     void markClosed(){
-        //std::lock_guard<std::mutex> lock(activeMutex_);
         isClosed_ = true;
     }
 
@@ -85,7 +77,6 @@ class AwsObject {
     }
 
     void setMultipartKey(Aws::String multipartKey){
-        //std::lock_guard<std::mutex> lock(activeMutex_);
         multipartKey_ = multipartKey;
     }
 
@@ -108,6 +99,9 @@ class AwsObject {
 
    private:
 
+    // Mutex lock to properly set upload multipart files
+    std::mutex awsObjectMutex_;
+
     bool uploadStarted_{false};
 
     bool isClosed_{false};
@@ -115,6 +109,12 @@ class AwsObject {
     std::unordered_map<int, Aws::String> partsStatus_;
 
     Aws::String multipartKey_{""};
+
+    // FIXME
+    int partNumber_{0};
+    int partsLeft_{0};
+    int partTotal_{0};
+    int partsDone_{0};
 
   };
 
@@ -145,20 +145,13 @@ class S3Writer {
   bool close();
 
 
-  //facebook::wdt::AwsObject activeObject_;
-
  private:
 
-  /**
-   * Return true if the file is already closed.
-   */
   bool isClosed();
-
 
   /// number of bytes written
   int64_t totalWritten_{0};
-  // should a be private but having issues witht he contructor initialization list.
-  //
+
 
   // FIXME
   FileS3 *moverParent_;

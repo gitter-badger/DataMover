@@ -1,4 +1,4 @@
-/**
+**
  * Copyright (c) 2014-present, Facebook, Inc.
  * All rights reserved.
  *
@@ -42,13 +42,14 @@ bool S3Writer::open() {
   if (options.skip_writes) {
     return OK;
   }
-  std::unique_lock<std::mutex> lock(moverParent_->awsObjectMutex_);
 
   auto object = moverParent_->awsObjectTracker_.find(source_.getIdentifier());
   if (object == moverParent_->awsObjectTracker_.end()) {
       AwsObject activeObject_(source_.getBlockNumber(), source_.getBlockTotal());
       moverParent_->awsObjectTracker_.insert({source_.getIdentifier(), activeObject_});
   }
+
+  std::unique_lock<std::mutex> lock(moverParent_->awsObjectTracker_[source_.getIdentifier()].awsObjectMutex_);
 
   if(!moverParent_->awsObjectTracker_[source_.getIdentifier()].isStarted()){
     Aws::S3::Model::CreateMultipartUploadRequest request;
@@ -84,9 +85,9 @@ bool S3Writer::close() {
       return false;
   }
 
-  if(moverParent_->awsObjectTracker_[source_.getIdentifier()].partsDone_ == source_.getBlockTotal() && !isClosed()){
-    std::lock_guard<std::mutex> lock(moverParent_->awsObjectMutex_);
   //if(moverParent_->awsObjectTracker_[source_.getIdentifier()].isFinished()){
+  if(moverParent_->awsObjectTracker_[source_.getIdentifier()].partsDone_ == source_.getBlockTotal() && !isClosed()){
+    std::unique_lock<std::mutex> lock(moverParent_->awsObjectTracker_[source_.getIdentifier()].awsObjectMutex_);
 
     Aws::S3::Model::CompletedMultipartUpload completed;
 

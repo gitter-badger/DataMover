@@ -129,11 +129,6 @@ bool FileS3::hasNewTransferStarted() const {
 
 const WdtTransferRequest &FileS3::init() {
 
-  // If this is not done AWS core dumps
-  //
-
-  WLOG(INFO) << "HI!!!!!";
-  //awsClientConfig_ = new Aws::Client::ClientConfiguration;
   awsClientConfig_.region = options_.awsRegion;
   awsClientConfig_.scheme = Aws::Http::Scheme::HTTP;
   awsClientConfig_.endpointOverride = options_.awsEndpointOverride;
@@ -151,7 +146,6 @@ const WdtTransferRequest &FileS3::init() {
   WLOG(INFO) << options_.awsSecretAccessKey;
 
   WLOG(INFO) << awsClientConfig_.endpointOverride;
-  //s3_client_ = new Aws::S3::S3Client s3_client_(awsClientCreds_,
   s3_client_ = Aws::S3::S3Client(awsClientCreds_,
                                awsClientConfig_,
                                Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never,

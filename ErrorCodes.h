@@ -87,7 +87,10 @@ WDT_LOG_PREFIX << WDT_DOUBLE_FORMATTING
   X(GLOBAL_CHECKPOINT_ABORT) /** Abort due to global checkpoint */             \
   X(INVALID_REQUEST)         /** Request for creation of wdt object invalid */ \
   X(SENDER_START_TIMED_OUT)  /** Sender start timed out */                     \
-  X(INCOMPATABLE_OPTIONS)    /** There are incompatible options*/
+  X(INCOMPATABLE_OPTIONS)    /** There are incompatible options*/              \
+  X(S3_OPEN_ERROR)           /** Failed to properly open an s3 object*/        \
+  X(S3_WRITE_ERROR)          /** Failed to properly open an s3 object*/        \
+  X(S3_CLOSE_ERROR)          /** Failed to properly open an s3 object*/
 
 enum ErrorCode {
 #define X(A) A,
