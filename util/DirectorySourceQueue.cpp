@@ -694,8 +694,6 @@ std::unique_ptr<ByteSource> DirectorySourceQueue::getNextSource(
       conditionNotEmpty_.notify_all();
     }
     lock.unlock();
-    WLOG(INFO) << "got next source " << rootDir_ + source->getIdentifier()
-             << " size " << source->getSize();
     // try to open the source
     if (source->open(callerThreadCtx) == OK) {
       lock.lock();

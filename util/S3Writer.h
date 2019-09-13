@@ -46,18 +46,13 @@ class AwsObject {
         partNumber_ = partNumber;
         partsLeft_ = partTotal;
         partTotal_ = partTotal;
-        WLOG(INFO) << "IN AO LEFT arg: " << partTotal;
-        WLOG(INFO) << "IN AO LEFT: " << partsLeft_;
     }
     AwsObject(){};
 
 
     void markPartUploaded(int partNumber, Aws::String etag){
         //std::lock_guard<std::mutex> lock(activeMutex_);
-        WLOG(INFO) << "MARKING: " << partNumber << " ETag: " << etag;
         partsStatus_[partNumber] = etag;
-        WLOG(INFO) << "CHECKING: " << partsStatus_[partNumber];
-        WLOG(INFO) << "PARTS LEFT: " << partsLeft_;
         partsLeft_--;
         partsDone_++;
     }
@@ -99,8 +94,6 @@ class AwsObject {
     }
 
     bool isFinished(){
-        WLOG(INFO) << "############# PARTS LEFT: " << partsLeft_;
-        WLOG(INFO) << "############# PARTS DONE: " << partsDone_;
         if(partsLeft_ > 0){
             return false;
         }
@@ -137,7 +130,6 @@ class S3Writer {
       threadCtx_(threadCtx),
       source_(source),
       moverParent_(moverParent) {
-          WLOG(INFO) << "Starting writer";
   }
 
   ~S3Writer();

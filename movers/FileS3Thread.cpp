@@ -117,14 +117,14 @@ TransferStats FileS3Thread::copyOneByteSource(
   */
 
 
-  WLOG(INFO) << " Read id:" << metadata.relPath
-            << " size:" << expectedSize << " ooff:" << oldOffset_;
+  //WLOG(INFO) << " Read id:" << metadata.relPath
+  //          << " size:" << expectedSize << " ooff:" << oldOffset_;
 
   // FIXME: remove this loop?
   while (!source->finished()) {
     int64_t size;
     char *buffer = source->read(size);
-    WLOG(INFO) << "Read size: " << size;
+    //WLOG(INFO) << "Read size: " << size;
     if (source->hasError()) {
       WTLOG(ERROR) << "Failed reading file " << source->getIdentifier()
                    << " for fd " << metadata.fd ;

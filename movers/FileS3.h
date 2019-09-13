@@ -92,9 +92,7 @@ class FileS3 : public WdtBase {
   /// directory discovery thread is also aborted
   class QueueAbortChecker : public IAbortChecker {
    public:
-    explicit QueueAbortChecker(FileS3 *worker) : worker_(worker) {
-        WLOG(INFO) << "In AQC";
-    }
+    explicit QueueAbortChecker(FileS3 *worker) : worker_(worker) { }
 
     bool shouldAbort() const override {
       return (worker_->getTransferStatus() == FINISHED);
