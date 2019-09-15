@@ -14,6 +14,7 @@
 #include <aws/s3/model/CreateMultipartUploadResult.h>
 #include <aws/s3/model/CompleteMultipartUploadRequest.h>
 #include <aws/s3/model/CompleteMultipartUploadResult.h>
+#include <aws/s3/model/AbortMultipartUploadRequest.h>
 #include <aws/s3/model/UploadPartRequest.h>
 #include <aws/s3/model/UploadPartResult.h>
 #include <aws/core/utils/StringUtils.h>

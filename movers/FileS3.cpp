@@ -298,6 +298,25 @@ std::unique_ptr<TransferReport> FileS3::finish() {
     // getTransferReport will set the error code to ERROR
     return getTransferReport();
   }
+
+  for( const auto& object : awsObjectTracker_ ) {
+      if(!object.first.isClosed(){
+        WLOG(INFO) << "Object " << object.first << " upload was not finished, rolling back.";
+        Aws::S3::Model::AbortMultipartUploadRequest abortRequest;
+        abortRequest.setBucket(options_.awsBucket);
+        abortRequest.setUploadId(object.first.getmultipartKey());
+        auto response = s3_client_.AbortMultipartUploadRequest(abortRequest);
+        if (response.IsSuccess()) {
+          WLOG(INFO) << "Successfully rolled backed " << object.first;
+        }else{
+          auto error = response.GetError();
+          WLOG(ERROR) << "Rollback of " << object.first << " failed: " << error;
+        }
+        return response.IsSuccess();
+
+      }
+  }
+
   if (status == THREADS_JOINED) {
     WVLOG(1) << "Threads have already been joined. Returning the"
              << " existing transfer report";
