@@ -37,15 +37,14 @@ class FileS3;
 class AwsObject {
   public:
 
-    explicit AwsObject(int partNumber, int partTotal) :
-        partNumber_(partNumber),
+    explicit AwsObject(int64_t partTotal) :
         partsLeft_(partTotal),
         partTotal_(partTotal) {}
 
     AwsObject(){};
 
 
-    void markPartUploaded(int partNumber, Aws::String etag){
+    void markPartUploaded(int64_t partNumber, Aws::String etag){
         partsStatus_[partNumber] = etag;
         partsLeft_--;
         partsDone_++;
@@ -63,11 +62,11 @@ class AwsObject {
         return uploadStarted_;
     }
 
-    int getPartsLeft(){
+    int64_t getPartsLeft(){
         return partsLeft_;
     }
 
-    Aws::String getPartEtag(int partNumber){
+    Aws::String getPartEtag(int64_t partNumber){
         auto object = partsStatus_.find(partNumber);
         if (object != partsStatus_.end()) {
             return partsStatus_[partNumber];
@@ -95,30 +94,26 @@ class AwsObject {
         return isClosed_;
     }
 
-    //std::mutex activeMutex_;
+    // Mutex lock to properly set upload multipart files
+    std::mutex awsObjectMutex_;
 
    private:
 
-    // Mutex lock to properly set upload multipart files
-    std::mutex awsObjectMutex_;
 
     bool uploadStarted_{false};
 
     bool isClosed_{false};
 
-    std::unordered_map<int, Aws::String> partsStatus_;
+    std::unordered_map<int64_t, Aws::String> partsStatus_;
 
     Aws::String multipartKey_{""};
 
     // FIXME
-    int partNumber_{0};
-    int partsLeft_{0};
-    int partTotal_{0};
-    int partsDone_{0};
+    int64_t partsLeft_{0};
+    int64_t partTotal_{0};
+    int64_t partsDone_{0};
 
   };
-
-  typedef std::unordered_map<std::string, AwsObject> AwsObjectTrackerType;
 
 
 class S3Writer {
@@ -157,9 +152,6 @@ class S3Writer {
   FileS3 *moverParent_;
   ThreadCtx &threadCtx_;
   ByteSource &source_;
-
-  AwsObject activeObject_;
-
 
 };
 

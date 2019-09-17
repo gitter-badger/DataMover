@@ -1,4 +1,4 @@
-**
+/**
  * Copyright (c) 2014-present, Facebook, Inc.
  * All rights reserved.
  *
@@ -9,6 +9,7 @@
 
 #include <list>
 #include <string>
+#include <unordered_map>
 #include <memory>
 
 #include <wdt/util/S3Writer.h>
@@ -44,14 +45,19 @@ bool S3Writer::open() {
   }
 
   auto object = moverParent_->awsObjectTracker_.find(source_.getIdentifier());
+  //AwsObject*& = object = moverParent_->awsObjectTracker_[source_.getIdentifier()];
+  //if (object == 0) {
   if (object == moverParent_->awsObjectTracker_.end()) {
-      AwsObject activeObject_(source_.getBlockNumber(), source_.getBlockTotal());
-      moverParent_->awsObjectTracker_.insert({source_.getIdentifier(), activeObject_});
+      //const AwsObject &newObject(source_.getBlockTotal());
+      const int64_t totalBlocks = source_.getBlockTotal();
+      const std::string key = source_.getIdentifier();
+      //moverParent_->awsObjectTracker_.insert(std::make_pair(source_.getIdentifier(), newObject));
+      moverParent_->awsObjectTracker_[key] = new AwsObject(totalBlocks);
   }
 
-  std::unique_lock<std::mutex> lock(moverParent_->awsObjectTracker_[source_.getIdentifier()].awsObjectMutex_);
+  std::unique_lock<std::mutex> lock(moverParent_->awsObjectTracker_[source_.getIdentifier()]->awsObjectMutex_);
 
-  if(!moverParent_->awsObjectTracker_[source_.getIdentifier()].isStarted()){
+  if(!moverParent_->awsObjectTracker_[source_.getIdentifier()]->isStarted()){
     Aws::S3::Model::CreateMultipartUploadRequest request;
     request.SetBucket(options.awsBucket);
     request.SetKey(source_.getIdentifier().c_str());
@@ -59,8 +65,8 @@ bool S3Writer::open() {
     auto response = moverParent_->s3_client_.CreateMultipartUpload(request);
     if (response.IsSuccess()) {
       Aws::S3::Model::CreateMultipartUploadResult result = response.GetResult();
-      moverParent_->awsObjectTracker_[source_.getIdentifier()].setMultipartKey(result.GetUploadId());
-      moverParent_->awsObjectTracker_[source_.getIdentifier()].markStarted();
+      moverParent_->awsObjectTracker_[source_.getIdentifier()]->setMultipartKey(result.GetUploadId());
+      moverParent_->awsObjectTracker_[source_.getIdentifier()]->markStarted();
     }else{
       auto error = response.GetError();
     }
@@ -71,7 +77,7 @@ bool S3Writer::open() {
 }
 
 bool S3Writer::isClosed(){
-    moverParent_->awsObjectTracker_[source_.getIdentifier()].isClosed();
+    moverParent_->awsObjectTracker_[source_.getIdentifier()]->isClosed();
 }
 
 bool S3Writer::close() {
@@ -85,9 +91,9 @@ bool S3Writer::close() {
       return false;
   }
 
-  //if(moverParent_->awsObjectTracker_[source_.getIdentifier()].isFinished()){
-  if(moverParent_->awsObjectTracker_[source_.getIdentifier()].partsDone_ == source_.getBlockTotal() && !isClosed()){
-    std::unique_lock<std::mutex> lock(moverParent_->awsObjectTracker_[source_.getIdentifier()].awsObjectMutex_);
+  //if(moverParent_->awsObjectTracker_[source_.getIdentifier()]->isFinished()){
+  if(moverParent_->awsObjectTracker_[source_.getIdentifier()]->getPartsLeft() == 0 && !isClosed()){
+    std::unique_lock<std::mutex> lock(moverParent_->awsObjectTracker_[source_.getIdentifier()]->awsObjectMutex_);
 
     Aws::S3::Model::CompletedMultipartUpload completed;
 
@@ -95,7 +101,7 @@ bool S3Writer::close() {
         Aws::S3::Model::CompletedPart completedPart;
 
         completedPart.SetPartNumber(i + 1);
-        completedPart.SetETag(moverParent_->awsObjectTracker_[source_.getIdentifier()].getPartEtag(i));
+        completedPart.SetETag(moverParent_->awsObjectTracker_[source_.getIdentifier()]->getPartEtag(i));
 
         completed.AddParts(completedPart);
     }
@@ -103,12 +109,12 @@ bool S3Writer::close() {
     Aws::S3::Model::CompleteMultipartUploadRequest request;
     request.SetBucket(options.awsBucket);
     request.SetKey(source_.getIdentifier().c_str());
-    request.SetUploadId(moverParent_->awsObjectTracker_[source_.getIdentifier()].getMultipartKey());
+    request.SetUploadId(moverParent_->awsObjectTracker_[source_.getIdentifier()]->getMultipartKey());
     request.WithMultipartUpload(completed);
 
     auto response = moverParent_->s3_client_.CompleteMultipartUpload(request);
     if (response.IsSuccess()) {
-      moverParent_->awsObjectTracker_[source_.getIdentifier()].markClosed();
+      moverParent_->awsObjectTracker_[source_.getIdentifier()]->markClosed();
     }else{
       auto error = response.GetError();
     }
@@ -134,7 +140,7 @@ bool S3Writer::write(char *buffer, int64_t size) {
     Aws::S3::Model::UploadPartRequest request;
     request.SetBucket(options.awsBucket);
     request.SetKey(source_.getIdentifier().c_str());
-    request.SetUploadId(moverParent_->awsObjectTracker_[source_.getIdentifier()].getMultipartKey());
+    request.SetUploadId(moverParent_->awsObjectTracker_[source_.getIdentifier()]->getMultipartKey());
     request.SetPartNumber(source_.getBlockNumber() + 1);
     request.SetContentLength(size);
     request.SetBody(data);
@@ -143,7 +149,7 @@ bool S3Writer::write(char *buffer, int64_t size) {
 
     if (response.IsSuccess()) {
       Aws::S3::Model::UploadPartResult result = response.GetResult();
-      moverParent_->awsObjectTracker_[source_.getIdentifier()].markPartUploaded(source_.getBlockNumber(), result.GetETag());
+      moverParent_->awsObjectTracker_[source_.getIdentifier()]->markPartUploaded(source_.getBlockNumber(), result.GetETag());
       totalWritten_ += size;
     }else{
       auto error = response.GetError();

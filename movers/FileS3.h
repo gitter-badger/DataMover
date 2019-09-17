@@ -30,7 +30,7 @@ class TransferHistoryController;
 
 class FileS3 : public WdtBase {
  public:
-  explicit FileS3(const WdtTransferRequest &transferRequest);
+  FileS3(const WdtTransferRequest &transferRequest);
 
   FileS3(int port, int numSockets, const std::string &destDir);
 
@@ -61,13 +61,13 @@ class FileS3 : public WdtBase {
   Aws::S3::S3Client s3_client_;
   Aws::Client::ClientConfiguration awsClientConfig_;
 
-  AwsObjectTrackerType getAwsObjectTracker(){
+  std::unordered_map<std::string, AwsObject*> getAwsObjectTracker(){
       return awsObjectTracker_;
   }
 
   // keep track of what parts of the file are uploaded and when
   // to do the multipart open and close
-  AwsObjectTrackerType awsObjectTracker_;
+  std::unordered_map<std::string, AwsObject*> awsObjectTracker_;
 
  private:
   friend class FileS3Thread;

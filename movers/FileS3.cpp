@@ -33,8 +33,9 @@ void FileS3::startNewTransfer() {
              << transferRequest_.hostName;
 }
 
-FileS3::FileS3(const WdtTransferRequest &transferRequest)
-    : queueAbortChecker_(this) {
+FileS3::FileS3(const WdtTransferRequest &transferRequest) :
+    queueAbortChecker_(this),
+    awsObjectTracker_{{}} {
   WLOG(INFO) << "FileS3: " << transferRequest.destination;
   transferRequest_ = transferRequest;
 
@@ -300,20 +301,18 @@ std::unique_ptr<TransferReport> FileS3::finish() {
   }
 
   for( const auto& object : awsObjectTracker_ ) {
-      if(!object.first.isClosed(){
-        WLOG(INFO) << "Object " << object.first << " upload was not finished, rolling back.";
+      if(!object.second->isClosed()){
+        WLOG(WARNING) << "Object " << object.first << " upload was not finished, rolling back.";
         Aws::S3::Model::AbortMultipartUploadRequest abortRequest;
-        abortRequest.setBucket(options_.awsBucket);
-        abortRequest.setUploadId(object.first.getmultipartKey());
-        auto response = s3_client_.AbortMultipartUploadRequest(abortRequest);
+        abortRequest.SetBucket(options_.awsBucket);
+        abortRequest.SetUploadId(object.second->getMultipartKey());
+        auto response = s3_client_.AbortMultipartUpload(abortRequest);
         if (response.IsSuccess()) {
-          WLOG(INFO) << "Successfully rolled backed " << object.first;
+          WLOG(WARNING) << "Successfully rolled backed " << object.first;
         }else{
           auto error = response.GetError();
           WLOG(ERROR) << "Rollback of " << object.first << " failed: " << error;
         }
-        return response.IsSuccess();
-
       }
   }
 
