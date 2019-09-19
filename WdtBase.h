@@ -122,6 +122,8 @@ class WdtBase {
   /// @return   Root destination directory
   const std::string& getDestination() const;
 
+  void setCallbacks(std::function<void(TransferStatus)> &transferFinishedCallback)
+
   /// @param      whether the object is stale. If all the transferring threads
   ///             have finished, the object will marked as stale
   bool isStale();
@@ -150,6 +152,9 @@ class WdtBase {
     FINISHED,        // last running thread finished
     THREADS_JOINED,  // threads joined
   };
+
+  bool useCallbacks = 0;
+  std::function<void(TransferStatus)> transferFinishedCallback_;
 
   /// Validate the transfer request
   virtual ErrorCode validateTransferRequest();
