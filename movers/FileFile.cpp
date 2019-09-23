@@ -273,7 +273,7 @@ std::unique_ptr<TransferReport> FileFile::finish() {
     WLOG(WARNING) << "Even though transfer has not started, finish is called";
     // getTransferReport will set the error code to ERROR
     if (useCallbacks){
-        transferFinishedCallback_(status);
+        transferFinishedCallback_(true);
     }
     
     return getTransferReport();
@@ -282,7 +282,7 @@ std::unique_ptr<TransferReport> FileFile::finish() {
     WVLOG(1) << "Threads have already been joined. Returning the"
              << " existing transfer report";
     if (useCallbacks){
-        transferFinishedCallback_(status);
+        transferFinishedCallback_(true);
     }
     return getTransferReport();
   }
@@ -362,7 +362,7 @@ std::unique_ptr<TransferReport> FileFile::finish() {
                     (totalTime - directoryTime) / kMbToB
              << " Mbytes/sec pure transfer rate)";
   if (useCallbacks){
-    transferFinishedCallback_(status);
+    transferFinishedCallback_(true);
   }
   return transferReport;
 }

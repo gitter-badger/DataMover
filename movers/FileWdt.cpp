@@ -183,11 +183,17 @@ std::unique_ptr<TransferReport> FileWdt::finish() {
   if (status == NOT_STARTED) {
     WLOG(WARNING) << "Even though transfer has not started, finish is called";
     // getTransferReport will set the error code to ERROR
+    if (useCallbacks){
+      transferFinishedCallback_(true);
+    }
     return getTransferReport();
   }
   if (status == THREADS_JOINED) {
     WVLOG(1) << "Threads have already been joined. Returning the"
              << " existing transfer report";
+    if (useCallbacks){
+      transferFinishedCallback_(true);
+    }
     return getTransferReport();
   }
   const bool twoPhases = options_.two_phases;
@@ -247,7 +253,7 @@ std::unique_ptr<TransferReport> FileWdt::finish() {
           transferredSourceStats, dirQueue_->getFailedSourceStats(),
           threadStats, dirQueue_->getFailedDirectories(), totalTime,
           totalFileSize, dirQueue_->getCount(),
-          dirQueue_->getPreviouslySentBytes(),
+         dirQueue_->getPreviouslySentBytes(),
           dirQueue_->fileDiscoveryFinished());
 
   if (progressReportEnabled) {
@@ -265,6 +271,9 @@ std::unique_ptr<TransferReport> FileWdt::finish() {
              << transferReport->getSummary().getEffectiveTotalBytes() /
                     (totalTime - directoryTime) / kMbToB
              << " Mbytes/sec pure transfer rate)";
+    if (useCallbacks){
+      transferFinishedCallback_(true);
+    }
   return transferReport;
 }
 

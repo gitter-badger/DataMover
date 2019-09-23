@@ -24,9 +24,9 @@ WdtBase::WdtBase() : abortCheckerCallback_(this) {
 void WdtBase::setWdtOptions(const WdtOptions& src) {
   options_.copyInto(src);
 }
-void WdtBase:::setCallbacks(std::function<void(TransferStatus)> &transferFinishedCallback){
+void WdtBase::setCallbacks(std::function<void(bool)> &transferFinishedCallback){
     useCallbacks = 1;
-    transferFinishedCallback_ = &transferFinishedCallback;
+    transferFinishedCallback_ = transferFinishedCallback;
 }
 
 WdtBase::~WdtBase() {

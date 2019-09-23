@@ -122,7 +122,6 @@ class WdtBase {
   /// @return   Root destination directory
   const std::string& getDestination() const;
 
-  void setCallbacks(std::function<void(TransferStatus)> &transferFinishedCallback)
 
   /// @param      whether the object is stale. If all the transferring threads
   ///             have finished, the object will marked as stale
@@ -145,7 +144,6 @@ class WdtBase {
     WdtBase* wdtBase_;
   };
 
- protected:
   enum TransferStatus {
     NOT_STARTED,     // threads not started
     ONGOING,         // transfer is ongoing
@@ -153,8 +151,12 @@ class WdtBase {
     THREADS_JOINED,  // threads joined
   };
 
+  void setCallbacks(std::function<void(bool)> &transferFinishedCallback);
+
+ protected:
+
   bool useCallbacks = 0;
-  std::function<void(TransferStatus)> transferFinishedCallback_;
+  std::function<void(bool)> transferFinishedCallback_;
 
   /// Validate the transfer request
   virtual ErrorCode validateTransferRequest();

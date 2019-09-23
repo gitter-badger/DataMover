@@ -297,11 +297,17 @@ std::unique_ptr<TransferReport> WdtFile::finish() {
   if (status == NOT_STARTED) {
     WLOG(WARNING) << "Even though transfer has not started, finish is called";
     // getTransferReport will set the error code to ERROR
+    if (useCallbacks){
+      transferFinishedCallback_(true);
+    }
     return getTransferReport();
   }
   if (status == THREADS_JOINED) {
     WLOG(WARNING) << "Threads have already been joined. Returning the "
                   << "transfer report";
+    if (useCallbacks){
+      transferFinishedCallback_(true);
+    }
     return getTransferReport();
   }
   if (!isJoinable_) {
@@ -333,6 +339,9 @@ std::unique_ptr<TransferReport> WdtFile::finish() {
 
   WLOG(WARNING) << "WDT receiver's transfer has been finished";
   WLOG(INFO) << *report;
+  if (useCallbacks){
+    transferFinishedCallback_(true);
+  }
   return report;
 }
 
