@@ -113,7 +113,8 @@ TransferStats FileFileThread::copyOneByteSource(
 
 
   WTVLOG(1) << "Read id:" << blockDetails.fileName
-            << " size:" << blockDetails.dataSize << " ooff:" << oldOffset_;
+              << " size:" << blockDetails.dataSize << " ooff:" << oldOffset_
+              << " Block offset:" << blockDetails.offset;
   auto &fileCreator = wdtParent_->getFileCreator();
   FileWriter writer(*threadCtx_, &blockDetails, fileCreator.get());
 
