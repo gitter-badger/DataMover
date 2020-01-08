@@ -70,6 +70,7 @@ endif()
 # The part of folly that isn't pure .h and we use:
 set (FOLLY_CPP_SRC
 "${FOLLY_SOURCE_DIR}/folly/Conv.cpp"
+"${FOLLY_SOURCE_DIR}/folly/lang/CString.cpp"
 "${FOLLY_SOURCE_DIR}/folly/Demangle.cpp"
 "${FOLLY_SOURCE_DIR}/folly/hash/Checksum.cpp"
 "${FOLLY_SOURCE_DIR}/folly/hash/detail/ChecksumDetail.cpp"
@@ -240,6 +241,19 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..)
 #  LIBRARY DESTINATION lib
 #  ARCHIVE DESTINATION lib
 #  )
+
+#add_executable( wdtCmdLine.cpp ${WDT_FLAGS_RELATED_SRC})
+set_target_properties(PROPERTIES COMPILE_DEFINITIONS "STANDALONE_APP")
+
+target_link_libraries(wdt_min)
+
+### Install rules
+set_target_properties( PROPERTIES RUNTIME_OUTPUT_NAME "wdt")
+install(TARGETS wdt wdt_min folly4wdt
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  )
 
 ### Install header files
 
