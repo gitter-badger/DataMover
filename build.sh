@@ -10,6 +10,8 @@
 TMP_DIR=/var/tmp/dm_build
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
+alias cmake=cmake3
+
 mkdir -p $TMP_DIR
 rm -Rf $TMP_DIR
 mkdir -p $TMP_DIR
@@ -44,7 +46,7 @@ cd ../../
 git clone https://github.com/google/glog.git
 cd glog
 ./autogen.sh
-./configure --without-gflags
+./configure
 make -j
 cd ../
 
@@ -53,10 +55,14 @@ cd ../
 ##################################
 
 mkdir -p dm_install
+mkdir -p dm_build
 rm -Rf dm_install
+rm -Rf dm_build
 mkdir -p dm_install/usr/local/
+mkdir -p dm_build
 
-cmake \
+cd dm_build
+cmake3 \
     $SCRIPT_DIR \
     -DBUILD_TESTING=off \
     -DFOLLY_SOURCE_DIR=${TMP_DIR}/folly \
