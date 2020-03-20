@@ -54,7 +54,7 @@ cd ../
 
 mkdir -p dm_install
 rm -Rf dm_install
-mkdir -p dm_install
+mkdir -p dm_install/usr/local/
 
 cmake \
     $SCRIPT_DIR \
@@ -62,7 +62,7 @@ cmake \
     -DFOLLY_SOURCE_DIR=${TMP_DIR}/folly \
     -DBOOST_INCLUDEDIR=/usr/include/boost169 \
     -DBOOST_LIBRARYDIR=/usr/lib64/boost169 \
-    -DCMAKE_INSTALL_PREFIX:PATH=${TMP_DIR}/wdt_install \
+    -DCMAKE_INSTALL_PREFIX:PATH=${TMP_DIR}/dm_install/usr/local/ \
     -DGFLAGS_LIBRARY=${TMP_DIR}/glog/.libs/libgflags.a \
     -DGFLAGS_LIBRARY=${TMP_DIR}/gflags/build/lib/libgflags.a
 

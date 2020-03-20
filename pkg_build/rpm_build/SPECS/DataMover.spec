@@ -77,8 +77,12 @@ mkdir -p dm_install
 rm -Rf dm_install
 mkdir -p dm_install/usr/local
 
+git clone https://github.bamtech.co/AutomationEngineering/DataMover.git
+# FIXME
+ln -s DataMover wdt
+cd dm_install
 cmake \
-    $SCRIPT_DIR \
+    ../DataMover \
     -DBUILD_TESTING=off \
     -DFOLLY_SOURCE_DIR=${RPM_BUILD_ROOT}/folly \
     -DBOOST_INCLUDEDIR=/usr/include/boost169 \

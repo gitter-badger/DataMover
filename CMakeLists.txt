@@ -323,7 +323,7 @@ set (FOLLY_HEADERS
 #endforeach()
 #
 install(
-    FILES "${FOLLY_SOURCE_DIR}/folly-config.h"
+    FILES "${FOLLY_SOURCE_DIR}/folly/folly-config.h"
     DESTINATION "include/folly/"
 )
 
