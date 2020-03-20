@@ -34,10 +34,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED on)
 # somehow 'option' for this doesn't seeem to work/I don't know how to make it
 set(BUILD_SHARED_LIBS on CACHE Bool "build shared libs")
 
-# CMake default behavior should be to set rpath when needed (non system install)
-# it's not so let's set this for now:
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# use, i.e. don't skip the full RPATH for the build tree
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+
+# when building, don't use the install RPATH already
+# (but later on when installing)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
+# the RPATH to be used when installing
+set(CMAKE_INSTALL_RPATH "")
+
+# don't add the automatically determined parts of the RPATH
+# which point to directories outside the build tree to the install RPATH
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+
 
 
 # Optimized by default
@@ -69,15 +81,16 @@ endif()
 
 # The part of folly that isn't pure .h and we use:
 set (FOLLY_CPP_SRC
-"${FOLLY_SOURCE_DIR}/folly/Conv.cpp"
-"${FOLLY_SOURCE_DIR}/folly/Demangle.cpp"
-"${FOLLY_SOURCE_DIR}/folly/hash/Checksum.cpp"
-"${FOLLY_SOURCE_DIR}/folly/hash/detail/ChecksumDetail.cpp"
-"${FOLLY_SOURCE_DIR}/folly/hash/detail/Crc32cDetail.cpp"
-"${FOLLY_SOURCE_DIR}/folly/hash/detail/Crc32CombineDetail.cpp"
-"${FOLLY_SOURCE_DIR}/folly/lang/ColdClass.cpp"
-"${FOLLY_SOURCE_DIR}/folly/ScopeGuard.cpp"
+    "${FOLLY_SOURCE_DIR}/folly/Conv.cpp"
+    "${FOLLY_SOURCE_DIR}/folly/lang/CString.cpp"
+    "${FOLLY_SOURCE_DIR}/folly/Demangle.cpp"
+    "${FOLLY_SOURCE_DIR}/folly/hash/Checksum.cpp"
+    "${FOLLY_SOURCE_DIR}/folly/hash/detail/ChecksumDetail.cpp"
+    "${FOLLY_SOURCE_DIR}/folly/hash/detail/Crc32cDetail.cpp"
+    "${FOLLY_SOURCE_DIR}/folly/hash/detail/Crc32CombineDetail.cpp"
+    "${FOLLY_SOURCE_DIR}/folly/ScopeGuard.cpp"
 )
+
 
 # WDT's library proper - comes from: ls -1 *.cpp | grep -iv test
 
@@ -148,11 +161,11 @@ find_package(Threads) # this will set ${CMAKE_THREAD_LIBS_INIT} (ie pthreads)
 find_path(DOUBLECONV_INCLUDE_DIR double-conversion/double-conversion.h)
 find_library(DOUBLECONV_LIBRARY double-conversion)
 # Glog
-find_path(GLOG_INCLUDE_DIR glog/logging.h)
-find_library(GLOG_LIBRARY glog)
+#find_path(GLOG_INCLUDE_DIR glog/logging.h)
+#find_library(GLOG_LIBRARY libglog.a)
 # Gflags
-find_path(GFLAGS_INCLUDE_DIR gflags/gflags.h)
-find_library(GFLAGS_LIBRARY gflags)
+#find_path(GFLAGS_INCLUDE_DIR gflags/gflags.h)
+#find_library(GFLAGS_LIBRARY libgflags.a)
 # OpenSSL's crypto lib}
 find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
@@ -235,11 +248,23 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 ### Install rules
 #set_target_properties(wdtbin PROPERTIES RUNTIME_OUTPUT_NAME "wdt")
-#install(TARGETS wdtbin wdt wdt_min folly4wdt
 #  RUNTIME DESTINATION bin
 #  LIBRARY DESTINATION lib
 #  ARCHIVE DESTINATION lib
 #  )
+
+#add_executable( wdtCmdLine.cpp ${WDT_FLAGS_RELATED_SRC})
+set_target_properties(PROPERTIES COMPILE_DEFINITIONS "STANDALONE_APP")
+
+target_link_libraries(wdt_min)
+
+### Install rules
+set_target_properties( PROPERTIES RUNTIME_OUTPUT_NAME "wdt")
+install(TARGETS wdt wdt_min folly4wdt
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  )
 
 ### Install header files
 
@@ -251,6 +276,56 @@ foreach(header ${headers})
 endforeach()
 
 # Install the .h files in the util with directory structure maintained
+
+set (FOLLY_HEADERS
+    "/folly/synchronization/RWSpinLock.h"
+    "/folly/Portability.h"
+    "/folly/CPortability.h"
+    "/folly/portability/Config.h"
+    "/folly/portability/Asm.h"
+    "/folly/portability/Malloc.h"
+    "/folly/portability/Constexpr.h"
+    "/folly/portability/String.h"
+    "/folly/Likely.h"
+    "/folly/Memory.h"
+    "/folly/ConstexprMath.h"
+    "/folly/Traits.h"
+    "/folly/functional/Invoke.h"
+    "/folly/Preprocessor.h"
+    "/folly/lang/Align.h"
+    "/folly/lang/Exception.h"
+    "/folly/CppAttributes.h"
+    "/folly/Range.h"
+    "/folly/hash/SpookyHashV2.h"
+    "/folly/CpuId.h"
+    "/folly/detail/RangeCommon.h"
+    "/folly/detail/RangeSse42.h"
+    "/folly/SpinLock.h"
+    "/folly/synchronization/SmallLocks.h"
+    "/folly/MicroLock.h"
+    "/folly/detail/Futex.h"
+    "/folly/portability/Unistd.h"
+    "/folly/detail/Futex-inl.h"
+    "/folly/synchronization/ParkingLot.h"
+    "/folly/Hash.h"
+    "/folly/hash/Hash.h"
+    "/folly/Utility.h"
+    "/folly/functional/ApplyTuple.h"
+    "/folly/hash/SpookyHashV1.h"
+    "/folly/lang/Bits.h"
+    )
+#foreach(header ${FOLLY_HEADERS})
+#    get_filename_component(header_dir "${header}" PATH)
+#    install(
+#        FILES "${FOLLY_SOURCE_DIR}${header}"
+#        DESTINATION "include/${header_dir}"
+#    )
+#endforeach()
+#
+install(
+    FILES "${FOLLY_SOURCE_DIR}/folly-config.h"
+    DESTINATION "include/folly/"
+)
 
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/util" DESTINATION include/wdt
         FILES_MATCHING PATTERN "*.h")
