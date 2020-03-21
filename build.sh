@@ -30,13 +30,12 @@ git clone https://github.com/facebook/folly.git
 git clone https://github.com/schuhschuh/gflags.git
 mkdir gflags/build
 cd gflags/build
-cmake \
+cmake3 \
     -DGFLAGS_NAMESPACE=google \
     -DBUILD_SHARED_LIBS=off \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     ..
 make -j
-make install
 cd ../../
 
 ##################################
