@@ -77,7 +77,7 @@ rm -Rf dm_build
 mkdir -p dm_install/usr/local/
 mkdir -p dm_build
 
-#git clone https://github.bamtech.co/AutomationEngineering/DataMover.git
+# FIXME
 cp -r /home/cmajoros/git/DataMover ./
 ln -s DataMover wdt
 
