@@ -50,6 +50,12 @@ make -j
 cd ../
 
 ##################################
+## AWS S3
+##################################
+
+git clone https://github.com/aws/aws-sdk-cpp.git
+
+##################################
 ## DataMover
 ##################################
 
@@ -62,14 +68,16 @@ mkdir -p dm_build
 
 cd dm_build
 cmake3 \
-    $SCRIPT_DIR \
     -DBUILD_TESTING=off \
+    -DBUILD_DEPS=ON \
     -DFOLLY_SOURCE_DIR=${TMP_DIR}/folly \
     -DBOOST_INCLUDEDIR=/usr/include/boost169 \
     -DBOOST_LIBRARYDIR=/usr/lib64/boost169 \
-    -DCMAKE_INSTALL_PREFIX:PATH=${TMP_DIR}/dm_install/usr/local/ \
+    –Daws-sdk-cpp_DIR=${TMP_DIR}/aws-sdk-cpp \
     -DGFLAGS_LIBRARY=${TMP_DIR}/glog/.libs/libgflags.a \
-    -DGFLAGS_LIBRARY=${TMP_DIR}/gflags/build/lib/libgflags.a
+    -DGFLAGS_LIBRARY=${TMP_DIR}/gflags/build/lib/libgflags.a \
+    -DCMAKE_INSTALL_PREFIX:PATH=${TMP_DIR}/dm_install/usr/local \
+    $SCRIPT_DIR
 
 make -j
 make install

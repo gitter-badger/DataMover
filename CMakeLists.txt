@@ -44,7 +44,7 @@ set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 
 # the RPATH to be used when installing
-set(CMAKE_INSTALL_RPATH "")
+set(CMAKE_INSTALL_RPATH "$ORIGIN")
 
 # don't add the automatically determined parts of the RPATH
 # which point to directories outside the build tree to the install RPATH
@@ -129,6 +129,8 @@ WdtBase.cpp
 Protocol.cpp
 )
 
+include_directories("/usr/local/include")
+
 TARGET_LINK_LIBRARIES(wdt_min
     aws-cpp-sdk-core
     aws-c-event-stream
@@ -145,8 +147,6 @@ Wdt.cpp
 add_library(wdt ${WDT_FLAGS_RELATED_SRC})
 
 target_link_libraries(wdt wdt_min)
-
-
 
 # Folly uses boost system and filesystem
 #set(Boost_USE_STATIC_LIBS on)
@@ -169,6 +169,8 @@ find_library(DOUBLECONV_LIBRARY double-conversion)
 # OpenSSL's crypto lib}
 find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
+
+find_package(aws-sdk-cpp)
 
 # You can also add jemalloc to the list if you have it/want it
 target_link_libraries(wdt_min
@@ -262,8 +264,8 @@ target_link_libraries(wdt_min)
 set_target_properties( PROPERTIES RUNTIME_OUTPUT_NAME "wdt")
 install(TARGETS wdt wdt_min folly4wdt
   RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib64
+  ARCHIVE DESTINATION lib64
   )
 
 ### Install header files

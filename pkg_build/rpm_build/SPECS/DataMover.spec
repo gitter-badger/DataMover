@@ -2,13 +2,16 @@ Summary: Library for moving data (perhaps even at warp speed)
 Name: DataMover
 Version: 0.1.0
 Release: el%(hostnamectl |grep "CPE OS Name" |awk -F":" '{print $6}')
+BuildArch: x86_64
 License: BSD
 URL: https://github.com/majoros/DataMover
 Group: Applications/File
 Packager: Chris Majoros
-Requires: double-conversion
-Requires: openssl
-Requires: boost169
+Requires: double-conversion >= 3.1.5
+Requires: openssl >= 1.1.1
+Requires: boost169 = 1.69.0
+Requires: boost169-filesystem = 1.69.0
+Requires: boost169-system = 1.69.0
 BuildRoot: ~/rpmbuild/
 
 %description
@@ -21,6 +24,8 @@ such as S3. It was build spacificly for the Python module pyDataMover
 echo PREP
 
 %build
+INST_DIR="/var/tmp/dm_install"
+mkdir -p $INST_DIR/usr/local
 
 # manually install the following via yum/apt/pacman(with .h files)...
 #    - boost 1.6.9
@@ -66,18 +71,19 @@ cd glog
 make -j
 cd ../
 
+
 ##################################
 ## DataMover
 ##################################
 
-mkdir -p dm_install
+mkdir -p dm_ins
 mkdir -p dm_build
-rm -Rf dm_install
 rm -Rf dm_build
-mkdir -p dm_install/usr/local/
 mkdir -p dm_build
 
-# FIXME
+# FIXME with ${_specdir} ????
+# ${_specdir}/../../../ ?????
+
 cp -r /home/cmajoros/git/DataMover ./
 ln -s DataMover wdt
 
@@ -88,7 +94,7 @@ cmake3 \
     -DFOLLY_SOURCE_DIR=${RPM_BUILD_ROOT}/folly \
     -DBOOST_INCLUDEDIR=/usr/include/boost169 \
     -DBOOST_LIBRARYDIR=/usr/lib64/boost169 \
-    -DCMAKE_INSTALL_PREFIX:PATH=${RPM_BUILD_ROOT}/dm_install/usr/local/ \
+    -DCMAKE_INSTALL_PREFIX:PATH=${INST_DIR}/usr/local/ \
     -DGFLAGS_LIBRARY=${RPM_BUILD_ROOT}/glog/.libs/libgflags.a \
     -DGFLAGS_LIBRARY=${RPM_BUILD_ROOT}/gflags/build/lib/libgflags.a
 
@@ -96,15 +102,21 @@ make -j
 make install
 
 %install
-cp -Rf /var/tmp/dm_build/dm_install/* $RPM_BUILD_ROOT
+INST_DIR="/var/tmp/dm_install"
+cp -Rf ${INST_DIR}/* ${RPM_BUILD_ROOT}/
+
+# TODO: Fix this with cmake commands
+find $RPM_BUILD_ROOT/usr/local/  -type f -name "*.so*" -exec chrpath -c -r "\$ORIGIN" {} \;
 
 %clean
+INST_DIR="/var/tmp/dm_install"
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
+rm -Rf $INST_DIR
 
 %files
-%attr(0744, root, root) /usr/local/bin/*
-%attr(0644, root, root) /usr/local/lib/*
-%attr(0644, root, root) /usr/local/include/*
+%attr(0755, root, root) /usr/local/bin/*
+%attr(0755, root, root) /usr/local/lib64/*
+%attr(0755, root, root) /usr/local/include/*
 
 
 
