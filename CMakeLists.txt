@@ -50,6 +50,8 @@ set(CMAKE_INSTALL_RPATH "$ORIGIN")
 # which point to directories outside the build tree to the install RPATH
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 
+set(CMAKE_LIBRARY_PATH "/var/tmp/dm_install/usr/local/lib64;/var/tmp/dm_install/usr/local/lib")
+set(CMAKE_INCLUDE_PATH "/var/tmp/dm_install/usr/local/include")
 
 
 # Optimized by default
@@ -58,8 +60,9 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 # So hardcoding for now:
 set(CMAKE_BUILD_TYPE Debug)
 #set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_CXX_FLAGS " -msse4.2 -mpclmul")
 #set(CMAKE_CXX_FLAGS "-Wall -ggdb -msse4.2 -mpclmul -fsanitize=address")
-set(CMAKE_CXX_FLAGS " -Wall -ggdb -msse4.2 -mpclmul")
+#set(CMAKE_CXX_FLAGS " -Wall -ggdb -msse4.2 -mpclmul")
 #set(CMAKE_CXX_FLAGS "-msse4.2 -mpclmul -Wextra -Wsign-compare -Wunused-variable")
 #set(CMAKE_CXX_FLAGS "-msse4.2 -mpclmul -Wextra -Wsign-compare -Wunused-variable -Wconversion -Wsign-conversion")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "_bin/wdt")
@@ -156,16 +159,18 @@ include_directories(${Boost_INCLUDE_DIRS})
 # We use std:: threads
 find_package(Threads) # this will set ${CMAKE_THREAD_LIBS_INIT} (ie pthreads)
 
-
 # double-conversion
 find_path(DOUBLECONV_INCLUDE_DIR double-conversion/double-conversion.h)
 find_library(DOUBLECONV_LIBRARY double-conversion)
+
 # Glog
-#find_path(GLOG_INCLUDE_DIR glog/logging.h)
-#find_library(GLOG_LIBRARY libglog.a)
+find_path(GLOG_INCLUDE_DIR glog/logging.h)
+find_library(GLOG_LIBRARY glog)
+
 # Gflags
-#find_path(GFLAGS_INCLUDE_DIR gflags/gflags.h)
-#find_library(GFLAGS_LIBRARY libgflags.a)
+find_path(GFLAGS_INCLUDE_DIR gflags/gflags.h)
+find_library(GFLAGS_LIBRARY gflags)
+
 # OpenSSL's crypto lib}
 find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})

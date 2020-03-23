@@ -7,7 +7,6 @@ License: BSD
 URL: https://github.com/majoros/DataMover
 Group: Applications/File
 Packager: Chris Majoros
-Requires: double-conversion >= 3.1.5
 Requires: openssl >= 1.1.1
 Requires: boost169 = 1.69.0
 Requires: boost169-filesystem = 1.69.0
@@ -47,63 +46,98 @@ git clone https://github.com/facebook/folly.git
 ##################################
 ## gflags
 ##################################
-
-# TODO: this may not be needed as we are not building the cli component.
 git clone https://github.com/schuhschuh/gflags.git
 mkdir gflags/build
 cd gflags/build
-cmake3 \
+cmake \
     -DGFLAGS_NAMESPACE=google \
-    -DBUILD_SHARED_LIBS=off \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DBUILD_SHARED_LIBS=on \
+    -DCMAKE_INSTALL_PREFIX:PATH=${INST_DIR}/usr/local/ \
     ..
-make -j
-cd ../../
+make
+make install
+cd $RPM_BUILD_ROOT
 
 ##################################
-## glog
+## glogs
 ##################################
-
 git clone https://github.com/google/glog.git
 cd glog
-./autogen.sh
-./configure
-make -j
-cd ../
+mkdir build
+cd build
+#./autogen.sh
+#./configure --with-gflags=${INST_DIR}/usr/local/
+#make -j && sudo make install
 
+cmake ..  \
+    -G "Unix Makefiles" \
+    -DWITH_GFLAGS=OFF \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_PREFIX_PATH="${INST_DIR}/usr/local/" \
+    -DCMAKE_INSTALL_PREFIX="${INST_DIR}/usr/local/" \
+    -DCMAKE_INSTALL_LIBDIR=lib64 \
+    -DINSTALL_HEADERS=1 \
+    -DBUILD_SHARED_LIBS=1 \
+    -DBUILD_STATIC_LIBS=0 \
+    -DBUILD_TESTING=0
+make
+make install
+cd $RPM_BUILD_ROOT
+
+##################################
+## Double conversion
+##################################
+git clone https://github.com/floitsch/double-conversion.git
+cd double-conversion;
+mkdir build
+cd build
+cmake \
+    .. \
+    -DCMAKE_PREFIX_PATH="${INST_DIR}/usr/local/" \
+    -DCMAKE_INSTALL_PREFIX="${INST_DIR}/usr/local/" \
+    -DBUILD_SHARED_LIBS=on
+
+make -j
+make install
+cd $RPM_BUILD_ROOT
 
 ##################################
 ## DataMover
 ##################################
 
-mkdir -p dm_ins
 mkdir -p dm_build
 rm -Rf dm_build
 mkdir -p dm_build
 
-# FIXME with ${_specdir} ????
-# ${_specdir}/../../../ ?????
-
-cp -r /home/cmajoros/git/DataMover ./
+cp -r ${HOME}/git/DataMover ./
 ln -s DataMover wdt
 
-cd dm_build
+cd ${RPM_BUILD_ROOT}/dm_build
+
 cmake3 \
     ${RPM_BUILD_ROOT}/DataMover \
     -DBUILD_TESTING=off \
     -DFOLLY_SOURCE_DIR=${RPM_BUILD_ROOT}/folly \
     -DBOOST_INCLUDEDIR=/usr/include/boost169 \
     -DBOOST_LIBRARYDIR=/usr/lib64/boost169 \
-    -DCMAKE_INSTALL_PREFIX:PATH=${INST_DIR}/usr/local/ \
-    -DGFLAGS_LIBRARY=${RPM_BUILD_ROOT}/glog/.libs/libgflags.a \
-    -DGFLAGS_LIBRARY=${RPM_BUILD_ROOT}/gflags/build/lib/libgflags.a
+    -DCMAKE_INSTALL_PREFIX:PATH=${INST_DIR}/usr/local/
+
+#    -DCMAKE_VERBOSE_MAKEFILE=on
 
 make -j
 make install
 
 %install
 INST_DIR="/var/tmp/dm_install"
-cp -Rf ${INST_DIR}/* ${RPM_BUILD_ROOT}/
+mkdir -p ${RPM_BUILD_ROOT}/usr/local/DataMover
+
+cp -Rf ${INST_DIR}/usr/local/include ${RPM_BUILD_ROOT}/usr/local/DataMover/
+cp -Rf ${INST_DIR}/usr/local/lib64 ${RPM_BUILD_ROOT}/usr/local/DataMover/
+if [ -d "${INST_DIR}/usr/local/lib" ]
+then
+    cp -Rf ${INST_DIR}/usr/local/lib/* ${RPM_BUILD_ROOT}/usr/local/DataMover/lib64/
+fi
+cp -Rf ${INST_DIR}/usr/local/bin ${RPM_BUILD_ROOT}/usr/local/DataMover/
 
 # TODO: Fix this with cmake commands
 find $RPM_BUILD_ROOT/usr/local/  -type f -name "*.so*" -exec chrpath -c -r "\$ORIGIN" {} \;
@@ -111,12 +145,12 @@ find $RPM_BUILD_ROOT/usr/local/  -type f -name "*.so*" -exec chrpath -c -r "\$OR
 %clean
 INST_DIR="/var/tmp/dm_install"
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
-rm -Rf $INST_DIR
+#rm -Rf $INST_DIR
 
 %files
-%attr(0755, root, root) /usr/local/bin/*
-%attr(0755, root, root) /usr/local/lib64/*
-%attr(0755, root, root) /usr/local/include/*
+%attr(0755, root, root) /usr/local/DataMover/bin/*
+%attr(0755, root, root) /usr/local/DataMover/lib64/*
+%attr(0755, root, root) /usr/local/DataMover/include/*
 
 
 
