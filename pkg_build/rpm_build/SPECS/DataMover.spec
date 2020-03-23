@@ -1,14 +1,17 @@
 Summary: Library for moving data (perhaps even at warp speed)
 Name: DataMover
 Version: 0.1.0
-Release: 1
+Release: el%(hostnamectl |grep "CPE OS Name" |awk -F":" '{print $6}')
+BuildArch: x86_64
 License: BSD
 URL: https://github.com/majoros/DataMover
 Group: Applications/File
 Packager: Chris Majoros
-Requires: double-conversion
-Requires: openssl
-Requires: boost169
+Requires: double-conversion >= 3.1.5
+Requires: openssl >= 1.1.1
+Requires: boost169 = 1.69.0
+Requires: boost169-filesystem = 1.69.0
+Requires: boost169-system = 1.69.0
 BuildRoot: ~/rpmbuild/
 
 %description
@@ -21,8 +24,8 @@ such as S3. It was build spacificly for the Python module pyDataMover
 echo PREP
 
 %build
-
-echo "BUILDROOT = $RPM_BUILD_ROOT"
+INST_DIR="/var/tmp/dm_install"
+mkdir -p $INST_DIR/usr/local
 
 # manually install the following via yum/apt/pacman(with .h files)...
 #    - boost 1.6.9
@@ -31,9 +34,8 @@ echo "BUILDROOT = $RPM_BUILD_ROOT"
 #    - automake
 #    - libtool
 
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-
-[ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
+mkdir -p $RPM_BUILD_ROOT
+rm -Rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
 cd $RPM_BUILD_ROOT
 
@@ -45,60 +47,93 @@ git clone https://github.com/facebook/folly.git
 ##################################
 ## gflags
 ##################################
-
-# TODO: this may not be needed as we are not building the cli component.
 git clone https://github.com/schuhschuh/gflags.git
 mkdir gflags/build
 cd gflags/build
 cmake \
     -DGFLAGS_NAMESPACE=google \
-    -DBUILD_SHARED_LIBS=off \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DBUILD_SHARED_LIBS=on \
+    -DCMAKE_INSTALL_PREFIX:PATH=${INST_DIR}/usr/local/ \
     ..
-make -j
-cd ../../
+make
+make install
+cd $RPM_BUILD_ROOT
 
 ##################################
-## glog
+## glogs
 ##################################
-
 git clone https://github.com/google/glog.git
 cd glog
-./autogen.sh
-./configure #--without-gflags
-make -j
-cd ../
+mkdir build
+cd build
+#./autogen.sh
+#./configure --with-gflags=${INST_DIR}/usr/local/
+#make -j && sudo make install
+
+cmake ..  \
+    -G "Unix Makefiles" \
+    -DWITH_GFLAGS=OFF \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_PREFIX_PATH="${INST_DIR}/usr/local/" \
+    -DCMAKE_INSTALL_PREFIX="${INST_DIR}/usr/local/" \
+    -DCMAKE_INSTALL_LIBDIR=lib64 \
+    -DINSTALL_HEADERS=1 \
+    -DBUILD_SHARED_LIBS=1 \
+    -DBUILD_STATIC_LIBS=0 \
+    -DBUILD_TESTING=0
+make
+make install
+cd $RPM_BUILD_ROOT
 
 ##################################
 ## DataMover
 ##################################
 
-mkdir -p dm_install
-rm -Rf dm_install
-mkdir -p dm_install/usr/local
+mkdir -p dm_build
+rm -Rf dm_build
+mkdir -p dm_build
 
-cmake \
-    $SCRIPT_DIR \
+cp -r ${HOME}/git/DataMover ./
+ln -s DataMover wdt
+
+cd ${RPM_BUILD_ROOT}/dm_build
+
+cmake3 \
+    ${RPM_BUILD_ROOT}/DataMover \
     -DBUILD_TESTING=off \
     -DFOLLY_SOURCE_DIR=${RPM_BUILD_ROOT}/folly \
     -DBOOST_INCLUDEDIR=/usr/include/boost169 \
     -DBOOST_LIBRARYDIR=/usr/lib64/boost169 \
-    -DGFLAGS_LIBRARY=${RPM_BUILD_ROOT}/glog/.libs/libgflags.a \
-    -DGFLAGS_LIBRARY=${RPM_BUILD_ROOT}/gflags/build/lib/libgflags.a \
-    -DCMAKE_INSTALL_PREFIX:PATH=${RPM_BUILD_ROOT}/dm_install/usr/local/
+    -DCMAKE_INSTALL_PREFIX:PATH=${INST_DIR}/usr/local/ \
+    -DCMAKE_VERBOSE_MAKEFILE=on
 
 make -j
 make install
 
 %install
-cp -Rf ${RPM_BUILD_ROOT}/dm_install/* $RPM_BUILD_ROOT
+INST_DIR="/var/tmp/dm_install"
+mkdir -p ${RPM_BUILD_ROOT}/usr/local/DataMover
 
+cp -Rf ${INST_DIR}/usr/local/include ${RPM_BUILD_ROOT}/usr/local/DataMover/
+cp -Rf ${INST_DIR}/usr/local/lib64 ${RPM_BUILD_ROOT}/usr/local/DataMover/
+if [ -d "${INST_DIR}/usr/local/lib" ]
+then
+    cp -Rf ${INST_DIR}/usr/local/lib/* ${RPM_BUILD_ROOT}/usr/local/DataMover/lib64/
+fi
+cp -Rf ${INST_DIR}/usr/local/bin ${RPM_BUILD_ROOT}/usr/local/DataMover/
+
+# TODO: Fix this with cmake commands
+find $RPM_BUILD_ROOT/usr/local/  -type f -name "*.so*" -exec chrpath -c -r "\$ORIGIN" {} \;
+
+%clean
+INST_DIR="/var/tmp/dm_install"
 [ "$RPM_BUILD_ROOT" != "/" ] && rm -rf $RPM_BUILD_ROOT
+#rm -Rf $INST_DIR
 
 %files
-%attr(0744, root, root) /usr/local/bin/*
-%attr(0644, root, root) /usr/local/lib/*
-%attr(0644, root, root) /usr/local/include/*
+%attr(0755, root, root) /usr/local/DataMover/bin/*
+%attr(0755, root, root) /usr/local/DataMover/lib64/*
+%attr(0755, root, root) /usr/local/DataMover/include/*
 
 
 
