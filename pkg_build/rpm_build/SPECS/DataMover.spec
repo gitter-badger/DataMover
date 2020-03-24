@@ -7,7 +7,6 @@ License: BSD
 URL: https://github.com/majoros/DataMover
 Group: Applications/File
 Packager: Chris Majoros
-Requires: double-conversion >= 3.1.5
 Requires: openssl >= 1.1.1
 Requires: boost169 = 1.69.0
 Requires: boost169-filesystem = 1.69.0
@@ -86,6 +85,23 @@ make install
 cd $RPM_BUILD_ROOT
 
 ##################################
+## Double conversion
+##################################
+git clone https://github.com/floitsch/double-conversion.git
+cd double-conversion;
+mkdir build
+cd build
+cmake \
+    .. \
+    -DCMAKE_PREFIX_PATH="${INST_DIR}/usr/local/" \
+    -DCMAKE_INSTALL_PREFIX="${INST_DIR}/usr/local/" \
+    -DBUILD_SHARED_LIBS=on
+
+make -j
+make install
+cd $RPM_BUILD_ROOT
+
+##################################
 ## DataMover
 ##################################
 
@@ -104,8 +120,9 @@ cmake3 \
     -DFOLLY_SOURCE_DIR=${RPM_BUILD_ROOT}/folly \
     -DBOOST_INCLUDEDIR=/usr/include/boost169 \
     -DBOOST_LIBRARYDIR=/usr/lib64/boost169 \
-    -DCMAKE_INSTALL_PREFIX:PATH=${INST_DIR}/usr/local/ \
-    -DCMAKE_VERBOSE_MAKEFILE=on
+    -DCMAKE_INSTALL_PREFIX:PATH=${INST_DIR}/usr/local/
+
+#    -DCMAKE_VERBOSE_MAKEFILE=on
 
 make -j
 make install
