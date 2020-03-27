@@ -430,7 +430,7 @@ void FileWdt::reportProgress() {
     {
       std::unique_lock<std::mutex> lock(mutex_);
       conditionFinished_.wait_for(lock, waitingTime);
-      if (transferStatus_ == THREADS_JOINED) {
+      if (transferStatus_ == THREADS_JOINED || transferStatus_ == FINISHED) {
         break;
       }
     }
