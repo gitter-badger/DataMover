@@ -8,9 +8,7 @@
 #    - libtool
 
 TMP_DIR=/var/tmp/dm_build
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-
-alias cmake=cmake3
+SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/src/datamover/"
 
 mkdir -p $TMP_DIR
 rm -Rf $TMP_DIR
@@ -30,12 +28,13 @@ git clone https://github.com/facebook/folly.git
 git clone https://github.com/schuhschuh/gflags.git
 mkdir gflags/build
 cd gflags/build
-cmake3 \
+cmake \
     -DGFLAGS_NAMESPACE=google \
     -DBUILD_SHARED_LIBS=off \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
     ..
 make -j
+make install
 cd ../../
 
 ##################################
@@ -45,39 +44,27 @@ cd ../../
 git clone https://github.com/google/glog.git
 cd glog
 ./autogen.sh
-./configure
+./configure --without-gflags
 make -j
 cd ../
-
-##################################
-## AWS S3
-##################################
-
-git clone https://github.com/aws/aws-sdk-cpp.git
 
 ##################################
 ## DataMover
 ##################################
 
 mkdir -p dm_install
-mkdir -p dm_build
 rm -Rf dm_install
-rm -Rf dm_build
-mkdir -p dm_install/usr/local/
-mkdir -p dm_build
+mkdir -p dm_install
 
-cd dm_build
-cmake3 \
+cmake \
+    $SRC_DIR \
     -DBUILD_TESTING=off \
-    -DBUILD_DEPS=ON \
     -DFOLLY_SOURCE_DIR=${TMP_DIR}/folly \
     -DBOOST_INCLUDEDIR=/usr/include/boost169 \
     -DBOOST_LIBRARYDIR=/usr/lib64/boost169 \
-    –Daws-sdk-cpp_DIR=${TMP_DIR}/aws-sdk-cpp \
+    -DCMAKE_INSTALL_PREFIX:PATH=${TMP_DIR}/wdt_install \
     -DGFLAGS_LIBRARY=${TMP_DIR}/glog/.libs/libgflags.a \
-    -DGFLAGS_LIBRARY=${TMP_DIR}/gflags/build/lib/libgflags.a \
-    -DCMAKE_INSTALL_PREFIX:PATH=${TMP_DIR}/dm_install/usr/local \
-    $SCRIPT_DIR
+    -DGFLAGS_LIBRARY=${TMP_DIR}/gflags/build/lib/libgflags.a
 
 make -j
 make install
