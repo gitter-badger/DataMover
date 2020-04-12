@@ -15,8 +15,7 @@
 #include <folly/String.h>
 #include <sys/stat.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 std::ostream &operator<<(std::ostream &os, const FileWdtThread &senderThread) {
   os << "Thread[" << senderThread.threadIndex_
@@ -1027,6 +1026,5 @@ ErrorCode FileWdtThread::getThreadAbortCode() {
     return GLOBAL_CHECKPOINT_ABORT;
   }
   return OK;
-}
 }
 }

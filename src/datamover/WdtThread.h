@@ -16,8 +16,7 @@
 #include <memory>
 #include <thread>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 class ThreadsController;
 
@@ -117,5 +116,4 @@ class WdtThread {
   /// Pointer to the std::thread executing the transfer
   std::unique_ptr<std::thread> threadPtr_{nullptr};
 };
-}
 }

@@ -24,8 +24,7 @@
 #include <datamover/WdtTransferRequest.h>
 #include <datamover/util/FileByteSource.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 /**
  * SourceQueue that returns all the regular files under a given directory
  * (recursively) as individual FileByteSource objects, sorted by decreasing
@@ -417,5 +416,4 @@ class DirectorySourceQueue : public SourceQueue {
   /// delete extra files in the receiver side
   bool deleteFiles_{false};
 };
-}
 }

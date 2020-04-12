@@ -16,8 +16,7 @@
 #include <iostream>
 #include <set>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 const static int64_t kMaxEntriesToPrint = 10;
 
@@ -529,6 +528,5 @@ std::ostream& operator<<(std::ostream& os, const PerfStatReport& statReport) {
     }
   }
   return os;
-}
 }
 }

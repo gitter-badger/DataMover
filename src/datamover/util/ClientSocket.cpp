@@ -17,8 +17,7 @@
 #include <folly/Conv.h>
 #include <folly/ScopeGuard.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 using std::string;
 
@@ -202,4 +201,3 @@ void ClientSocket::setSendBufferSize() {
 ClientSocket::~ClientSocket() {
 }
 }
-}  // end namespace facebook::wdt

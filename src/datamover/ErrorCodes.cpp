@@ -13,8 +13,8 @@
 DEFINE_int32(wdt_double_precision, 2, "Precision while printing double");
 DEFINE_bool(wdt_logging_enabled, true, "To enable/disable WDT logging.");
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
+
 std::string errorCodeToStr(ErrorCode code) {
   int numErrorCodes = sizeof(kErrorToStr) / sizeof(kErrorToStr[0]);
   if (code < numErrorCodes) {
@@ -39,6 +39,5 @@ std::string strerrorStr(int errnum) {
 #endif
   result.assign(res);
   return result;
-}
 }
 }

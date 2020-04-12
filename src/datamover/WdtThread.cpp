@@ -10,8 +10,7 @@
 
 using namespace std;
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 TransferStats WdtThread::moveStats() {
   return std::move(threadStats_);
@@ -54,6 +53,5 @@ WdtThread::~WdtThread() {
                << "destructed";
     finish();
   }
-}
 }
 }

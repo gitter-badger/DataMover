@@ -13,8 +13,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 typedef std::shared_ptr<WdtFile> ReceiverPtr;
 typedef std::shared_ptr<FileWdt> SenderPtr;
@@ -290,5 +289,4 @@ class WdtResourceController : public WdtControllerBase {
   bool hasReceiverQuotaInternal(const std::shared_ptr<WdtNamespaceController>
                                     &controller = nullptr) const;
 };
-}  // namespace wdt
-}  // namespace facebook
+}

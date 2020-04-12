@@ -17,8 +17,7 @@
 #include <string>
 #include <vector>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 // Note: we use int64_t internally for most things - it helps for arithmetic
 // and not getting accidental overflow when substracting, it helps comparaison
@@ -519,4 +518,3 @@ class Protocol {
       std::vector<FileChunksInfo> &fileChunksInfoList);
 };
 }
-}  // namespace facebook::wdt

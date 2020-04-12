@@ -13,8 +13,7 @@
 using folly::ByteRange;
 using std::string;
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 ByteRange makeByteRange(string str) {
   return ByteRange((uint8_t *)str.data(), str.size());
@@ -185,6 +184,5 @@ bool decodeString(ByteRange &br, string &str) {
   str.assign((const char *)(br.start()), strLen);
   br.advance(strLen);
   return true;
-}
 }
 }

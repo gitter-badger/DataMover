@@ -13,8 +13,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <algorithm>
-namespace facebook {
-namespace wdt {
+
+namespace datamover {
 
 int FileUtil::openForRead(ThreadCtx &threadCtx, const std::string &filename,
                           const bool isDirectReads) {
@@ -197,6 +197,5 @@ void FileByteSource::close() {
   }
   fd_ = -1;
   threadCtx_ = nullptr;
-}
 }
 }

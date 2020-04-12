@@ -14,8 +14,7 @@
 #include <glog/logging.h>
 #include <sys/types.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 FileWriter::~FileWriter() {
   // Make sure that the file is closed but this should be a no-op as the
@@ -179,6 +178,5 @@ bool FileWriter::syncFileRange(int64_t written, bool forced) {
   }
 #endif
   return true;
-}
 }
 }

@@ -10,8 +10,7 @@
 #include <folly/ScopeGuard.h>
 #include <folly/String.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 
 void FileS3::endCurTransfer() {
@@ -577,4 +576,3 @@ void FileS3::traverseDestinationDir(
 }
 
 }
-}  // namespace facebook::wdt

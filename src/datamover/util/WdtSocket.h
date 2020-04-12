@@ -7,8 +7,7 @@
 #include <datamover/util/EncryptionUtils.h>
 #include <memory>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 using Func = std::function<void()>;
 
@@ -259,5 +258,4 @@ class WdtSocket {
   /// Have we already read the tag and completed decryption
   bool readsFinalized_{false};
 };
-}
 }

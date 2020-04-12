@@ -24,8 +24,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 /**
  * Shared code/functionality between Receiver and Sender
@@ -212,4 +211,3 @@ class WdtBase {
   std::shared_ptr<IAbortChecker> abortChecker_{nullptr};
 };
 }
-}  // namespace facebook::wdt

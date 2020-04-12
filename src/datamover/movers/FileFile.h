@@ -7,8 +7,7 @@
 #include <iostream>
 #include <memory>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 class FileFileThread;
 class TransferHistoryController;
@@ -146,4 +145,3 @@ class FileFile : public WdtBase {
 };
 
 }
-}  // namespace facebook::wdt

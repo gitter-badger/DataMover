@@ -18,8 +18,8 @@
 #include <string>
 #include <thread>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
+
 /**
  * WdtFile is the receiving side of the transfer. WdtFile listens on ports
  * accepts connections, receives the files and writes to the destination
@@ -218,4 +218,3 @@ class WdtFile : public WdtBase {
   AcceptMode acceptMode_{ACCEPT_WITH_RETRIES};
 };
 }
-}  // namespace facebook::wdt

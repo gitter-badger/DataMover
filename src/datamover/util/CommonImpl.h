@@ -12,8 +12,7 @@
 
 #include <datamover/Reporting.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 const int64_t kDiskBlockSize = 4 * 1024;
 
@@ -152,5 +151,5 @@ std::atomic<uint64_t> SignalSubscriber<Tag>::globalEpoch_ = {};
 
 struct ReportPerfTag {};
 typedef SignalSubscriber<ReportPerfTag> ReportPerfSignalSubscriber;
-}
+
 }

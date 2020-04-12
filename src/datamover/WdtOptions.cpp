@@ -10,8 +10,7 @@
 #include <glog/logging.h>
 #include <datamover/Throttler.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 /**
  * Macro to change the default of some flags based on some other flag
@@ -97,6 +96,5 @@ WdtOptions& WdtOptions::getMutable() {
 
 void WdtOptions::copyInto(const WdtOptions& src) {
   *this = src;
-}
 }
 }

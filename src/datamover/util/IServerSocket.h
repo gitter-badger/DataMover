@@ -14,8 +14,7 @@
 #include <netdb.h>
 #include <string>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 typedef struct addrinfo *addrInfoList;
 
@@ -86,5 +85,4 @@ class IServerSocket {
 
   virtual void disableIvChange() = 0;
 };
-}  // namespace wdt
-}  // namespace facebook
+}

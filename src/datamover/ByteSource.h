@@ -13,8 +13,7 @@
 
 #include <string>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 /// struct representing file level data shared between blocks
 struct SourceMetaData {
@@ -120,5 +119,4 @@ class ByteSource {
   virtual void addTransferStats(const TransferStats &stats) = 0;
 };
 
-}  // end namespaces
 }

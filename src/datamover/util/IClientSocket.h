@@ -12,8 +12,8 @@
 #include <datamover/util/EncryptionUtils.h>
 #include <string>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
+
 class IClientSocket {
  public:
   virtual ~IClientSocket() {
@@ -57,5 +57,4 @@ class IClientSocket {
   /// @return     write error code
   virtual ErrorCode getWriteErrCode() const = 0;
 };
-}  // namespace wdt
-}  // namespace facebook
+}

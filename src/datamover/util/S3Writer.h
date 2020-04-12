@@ -29,8 +29,7 @@
 #include <aws/core/auth/AWSCredentialsProvider.h>
 
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 class FileS3;
 
@@ -156,5 +155,4 @@ class S3Writer {
 };
 
 
-}
 }

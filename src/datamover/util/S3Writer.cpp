@@ -24,8 +24,7 @@
 #include <aws/core/utils/memory/stl/AWSStringStream.h>
 
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 S3Writer::~S3Writer() {
   // Make sure that the file is closed but this should be a no-op as the
@@ -77,7 +76,7 @@ bool S3Writer::open() {
 }
 
 bool S3Writer::isClosed(){
-    moverParent_->awsObjectTracker_[source_.getIdentifier()]->isClosed();
+    return moverParent_->awsObjectTracker_[source_.getIdentifier()]->isClosed();
 }
 
 bool S3Writer::close() {
@@ -158,5 +157,4 @@ bool S3Writer::write(char *buffer, int64_t size) {
   return true;
 }
 
-}
 }

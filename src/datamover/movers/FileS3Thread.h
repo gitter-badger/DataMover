@@ -8,8 +8,7 @@
 #include <datamover/util/S3Writer.h>
 #include <thread>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 class DirectorySourceQueue;
 
@@ -124,5 +123,4 @@ class FileS3Thread : public WdtThread {
   std::unique_ptr<IAbortChecker> threadAbortChecker_{nullptr};
 
 };
-}
 }

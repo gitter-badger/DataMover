@@ -22,8 +22,7 @@
 #include <aws/core/auth/AWSCredentials.h>
 #include <aws/core/auth/AWSCredentialsProvider.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 class FileS3Thread;
 class TransferHistoryController;
@@ -173,4 +172,3 @@ class FileS3 : public WdtBase {
 
 
 }
-}  // namespace facebook::wdt

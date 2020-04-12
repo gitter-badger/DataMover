@@ -1,13 +1,8 @@
-# CMake build file - use CMake 3.2 or later to build WDT and its dependencies.
+# CMake build file - use CMake 3.2 or later to build DM and its dependencies.
 #
 # mkdir build; cd build; cmake .. -DBUILD_TESTING=on; make -j
 # omit -DBUILD_TESTING=on if you don't want the extra dependencies for
 # testing (but testing is good !)
-# (at fb:
-# cd local; mkdir wdt_build; cd wdt_build
-# cmake31 ~/fbcode/wdt -DFOLLY_SOURCE_DIR=$HOME/fbcode -DBUILD_TESTING=on
-# make -j
-# )
 #
 #  Copyright (c) 2014-present, Facebook, Inc.
 #  All rights reserved.
@@ -22,10 +17,10 @@ cmake_minimum_required(VERSION 3.2)
 # There is no C per se in WDT but if you use CXX only here many checks fail
 # Version is Major.Minor.YYMMDDX for up to 10 releases per day (X from 0 to 9)
 # Minor currently is also the protocol version - has to match with Protocol.cpp
-project("WDT" LANGUAGES C CXX VERSION 1.31.1903011)
+project("DataMover" LANGUAGES C CXX VERSION 1.31.1903011)
 
 # On MacOS this requires the latest (master) CMake (and/or CMake 3.1.1/3.2)
-# WDT itself works fine with C++11 (gcc 4.8 for instance) but more recent folly
+# DM itself works fine with C++11 (gcc 4.8 for instance) but more recent folly
 # started to require C++14, so you can either get an older snapshot of folly
 # and set "11" below or use this:
 set(CMAKE_CXX_STANDARD 17)
@@ -65,7 +60,7 @@ set(CMAKE_CXX_FLAGS " -msse4.2 -mpclmul")
 #set(CMAKE_CXX_FLAGS " -Wall -ggdb -msse4.2 -mpclmul")
 #set(CMAKE_CXX_FLAGS "-msse4.2 -mpclmul -Wextra -Wsign-compare -Wunused-variable")
 #set(CMAKE_CXX_FLAGS "-msse4.2 -mpclmul -Wextra -Wsign-compare -Wunused-variable -Wconversion -Wsign-conversion")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "_bin/wdt")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "_bin/datamover")
 
 # Check that we have the Folly source tree
 set(FOLLY_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../folly" CACHE path
@@ -75,7 +70,7 @@ set(FOLLY_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../folly" CACHE path
 if(NOT EXISTS "${FOLLY_SOURCE_DIR}/folly/Conv.h")
   MESSAGE(FATAL_ERROR "${FOLLY_SOURCE_DIR}/folly/Conv.h not found
 Fix using:
-(in a sister directory of the wdt source tree - same level:)
+(in a sister directory of the DM source tree - same level:)
 git clone https://github.com/facebook/folly.git
 or change FOLLY_SOURCE_DIR (use ccmake or -DFOLLY_SOURCE_DIR=...)
 ")
@@ -97,7 +92,7 @@ set (FOLLY_CPP_SRC
 
 # WDT's library proper - comes from: ls -1 *.cpp | grep -iv test
 
-add_library(wdt_min
+add_library(datamover_min
 WdtTransferRequest.cpp
 WdtResourceController.cpp
 WdtOptions.cpp
@@ -132,7 +127,7 @@ WdtBase.cpp
 Protocol.cpp
 )
 
-TARGET_LINK_LIBRARIES(wdt_min
+TARGET_LINK_LIBRARIES(datamover_min
     aws-cpp-sdk-core
     aws-c-event-stream
     aws-cpp-sdk-s3
@@ -141,13 +136,13 @@ TARGET_LINK_LIBRARIES(wdt_min
 )
 
 # Source files that depend on gflags and provide flags -> options init
-set (WDT_FLAGS_RELATED_SRC
+set (DM_FLAGS_RELATED_SRC
 util/WdtFlags.cpp
 Wdt.cpp
 )
-add_library(wdt ${WDT_FLAGS_RELATED_SRC})
+add_library(datamover ${DM_FLAGS_RELATED_SRC})
 
-target_link_libraries(wdt wdt_min)
+target_link_libraries(datamover datamover_min)
 
 
 
@@ -176,8 +171,8 @@ find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 # You can also add jemalloc to the list if you have it/want it
-target_link_libraries(wdt_min
-  folly4wdt
+target_link_libraries(datamover_min
+  folly4datamover
   ${GLOG_LIBRARY}
   ${GFLAGS_LIBRARY}
   ${Boost_LIBRARIES}
@@ -192,7 +187,7 @@ include(CheckIncludeFileCXX)
 include(CheckFunctionExists)
 include(CheckLibraryExists)
 include(CheckCXXSourceCompiles)
-# For WDT itself:
+# For DataMover itself:
 check_function_exists(posix_fallocate HAS_POSIX_FALLOCATE)
 check_function_exists(sync_file_range HAS_SYNC_FILE_RANGE)
 check_function_exists(posix_memalign HAS_POSIX_MEMALIGN)
@@ -210,7 +205,7 @@ set(CMAKE_REQUIRED_LIBRARIES ${SAVE_CMRL}) #globals are evil/ugly
 # or else they will not work'
 
 set(CMAKE_REQUIRED_DEFINITIONS ${CMAKE_CXX11_STANDARD_COMPILE_OPTION})
-check_include_file_cxx(linux/sockios.h WDT_HAS_SOCKIOS_H)
+check_include_file_cxx(linux/sockios.h DM_HAS_SOCKIOS_H)
 #check_function_exists(clock_gettime FOLLY_HAVE_CLOCK_GETTIME)
 check_cxx_source_compiles("#include <type_traits>
       #if !_LIBCPP_VERSION
@@ -225,7 +220,7 @@ int main(int argc, char** argv) {
 # Now record all this :
 # Folly's:
 configure_file(build/folly-config.h.in folly/folly-config.h)
-# Wdt's config/version
+# datamover's config/version
 configure_file(WdtConfig.h.in wdt/WdtConfig.h)
 
 # Malloc stuff  tied to not supporting weaksympbols
@@ -234,8 +229,8 @@ if (NOT FOLLY_HAVE_WEAK_SYMBOLS)
   message(STATUS "no weak symbols, adding MallocImpl to folly src")
 endif()
 
-add_library(folly4wdt ${FOLLY_CPP_SRC})
-target_link_libraries(folly4wdt ${GLOG_LIBRARY} ${DOUBLECONV_LIBRARY})
+add_library(folly4datamover ${FOLLY_CPP_SRC})
+target_link_libraries(folly4datamover ${GLOG_LIBRARY} ${DOUBLECONV_LIBRARY})
 
 # Order is important - inside fb we want the above
 # folly-config.h to be picked up instead of the fbcode one
@@ -246,26 +241,13 @@ include_directories(${GLOG_INCLUDE_DIR})
 include_directories(${GFLAGS_INCLUDE_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..)
 
-#add_executable(wdtbin wdtCmdLine.cpp ${WDT_FLAGS_RELATED_SRC})
-#set_target_properties(wdtbin PROPERTIES COMPILE_DEFINITIONS "STANDALONE_APP")
-
-#target_link_libraries(wdtbin wdt_min)
-
-### Install rules
-#set_target_properties(wdtbin PROPERTIES RUNTIME_OUTPUT_NAME "wdt")
-#  RUNTIME DESTINATION bin
-#  LIBRARY DESTINATION lib
-#  ARCHIVE DESTINATION lib
-#  )
-
-#add_executable( wdtCmdLine.cpp ${WDT_FLAGS_RELATED_SRC})
 set_target_properties(PROPERTIES COMPILE_DEFINITIONS "STANDALONE_APP")
 
-target_link_libraries(wdt_min)
+target_link_libraries(datamover_min)
 
 ### Install rules
-set_target_properties( PROPERTIES RUNTIME_OUTPUT_NAME "wdt")
-install(TARGETS wdt wdt_min folly4wdt
+set_target_properties( PROPERTIES RUNTIME_OUTPUT_NAME "datamover")
+install(TARGETS datamover datamover_min folly4datamover
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib64
   ARCHIVE DESTINATION lib64
@@ -277,7 +259,7 @@ install(TARGETS wdt wdt_min folly4wdt
 
 file(GLOB headers "*.h")
 foreach(header ${headers})
-  install(FILES ${header} DESTINATION include/wdt)
+  install(FILES ${header} DESTINATION include/datamover)
 endforeach()
 
 # Install the .h files in the util with directory structure maintained
@@ -332,17 +314,17 @@ install(
     DESTINATION "include/folly/"
 )
 
-install(DIRECTORY "${PROJECT_SOURCE_DIR}/util" DESTINATION include/wdt
+install(DIRECTORY "${PROJECT_SOURCE_DIR}/util" DESTINATION include/datamover
         FILES_MATCHING PATTERN "*.h")
 
-install(DIRECTORY "${PROJECT_SOURCE_DIR}/movers" DESTINATION include/wdt
+install(DIRECTORY "${PROJECT_SOURCE_DIR}/movers" DESTINATION include/datamover
         FILES_MATCHING PATTERN "*.h")
 
 # wcp script
 install(PROGRAMS test/wcp.sh DESTINATION bin RENAME wcp)
 
 
-### Everything below is about testing (and not required to create wdt/wdt)
+### Everything below is about testing (and not required to create datamover)
 
 if (BUILD_TESTING)
 

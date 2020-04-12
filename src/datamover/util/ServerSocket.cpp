@@ -13,8 +13,9 @@
 #include <poll.h>
 #include <sys/socket.h>
 #include <algorithm>
-namespace facebook {
-namespace wdt {
+
+namespace datamover {
+
 using std::string;
 
 ServerSocket::ServerSocket(ThreadCtx &threadCtx, int port, int backlog,
@@ -334,4 +335,3 @@ int ServerSocket::getBackLog() const {
   return backlog_;
 }
 }
-}  // end namespace facebook::wdt

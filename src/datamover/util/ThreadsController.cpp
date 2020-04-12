@@ -11,8 +11,7 @@
 
 using namespace std;
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 void ConditionGuardImpl::wait(int timeoutMillis, const ThreadCtx &threadCtx) {
   const WdtOptions &options = threadCtx.getOptions();
@@ -266,6 +265,5 @@ void ThreadsController::setNumFunnels(int numFunnels) {
   for (int i = 0; i < numFunnels; i++) {
     funnelExecutors_.push_back(make_shared<Funnel>());
   }
-}
 }
 }

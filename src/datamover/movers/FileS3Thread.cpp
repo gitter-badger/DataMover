@@ -10,8 +10,7 @@
 #include <sys/stat.h>
 
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 const FileS3Thread::StateFunction FileS3Thread::stateMap_[] = {
     &FileS3Thread::copyFileChunk,
@@ -226,5 +225,3 @@ ErrorCode FileS3Thread::getThreadAbortCode() {
 }
 
 }
-}
-

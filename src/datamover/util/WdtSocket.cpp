@@ -9,8 +9,7 @@
 #include <linux/sockios.h>
 #endif
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 WdtSocket::WdtSocket(ThreadCtx &threadCtx, const int port,
                      const EncryptionParams &encryptionParams,
@@ -838,6 +837,5 @@ int WdtSocket::getUnackedBytes() const {
 WdtSocket::~WdtSocket() {
   WVLOG(1) << "~WdtSocket " << port_ << " " << fd_;
   closeNoCheck();
-}
 }
 }

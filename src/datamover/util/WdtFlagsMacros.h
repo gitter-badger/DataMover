@@ -4,14 +4,14 @@
 
 /// Which options object to use (we can reuse those macros for fbonly options)
 #ifndef OPTIONS
-#define OPTIONS wdt::WdtOptions
+#define OPTIONS WdtOptions
 #endif
 
 // Short symbol A is a field inside the Options struct
 // The flag name is either the short one DEFINE_type(A,...) or
 // prefixed by wdt_ so we play nice with others when making a
 // library (long flag)
-#define WDT_READ_OPT(A) facebook::OPTIONS::get().A
+#define WDT_READ_OPT(A) datamover::OPTIONS::get().A
 #define WDT_OPT_VARIABLE(A) options.A
 
 // Generic macros to concat and stringify:

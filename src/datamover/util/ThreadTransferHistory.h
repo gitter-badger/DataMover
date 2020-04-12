@@ -13,8 +13,7 @@
 #include <datamover/util/DirectorySourceQueue.h>
 #include <vector>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 /// Transfer history of a sender thread
 class ThreadTransferHistory {
@@ -166,5 +165,4 @@ class TransferHistoryController {
   std::unordered_map<int32_t, std::unique_ptr<ThreadTransferHistory>>
       threadHistoriesMap_;
 };
-}
 }

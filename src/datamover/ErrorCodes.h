@@ -22,8 +22,7 @@
 DECLARE_int32(wdt_double_precision);
 DECLARE_bool(wdt_logging_enabled);
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 // Call regular google log but prefix with wdt for easier extraction later
 #define WDT_LOG_PREFIX "wdt>\t"
@@ -122,6 +121,5 @@ ErrorCode getMoreInterestingError(ErrorCode err1, ErrorCode err2);
  * (similar to folly::errnoStr() but without pulling in all the dependencies)
  */
 std::string strerrorStr(int errnum);
-}
 }
 #undef ERRORS

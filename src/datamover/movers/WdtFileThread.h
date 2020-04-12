@@ -12,8 +12,7 @@
 #include <datamover/WdtThread.h>
 #include <datamover/util/ServerSocket.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 class WdtFile;
 /**
@@ -335,5 +334,4 @@ class WdtFileThread : public WdtThread {
   /// list of received blocks which have not yet been verified
   std::vector<BlockDetails> blocksWaitingVerification_;
 };
-}
 }

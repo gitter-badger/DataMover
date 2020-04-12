@@ -24,8 +24,7 @@
 using folly::ByteRange;
 using std::string;
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 // TODO consider revamping this log format
 
@@ -1117,6 +1116,5 @@ ErrorCode LogParser::parseLog(int fd, string &senderIp,
     }
   }
   return status;
-}
 }
 }

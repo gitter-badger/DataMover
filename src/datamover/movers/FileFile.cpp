@@ -10,8 +10,7 @@
 #include <folly/ScopeGuard.h>
 #include <folly/String.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 void FileFile::endCurTransfer() {
   endTime_ = Clock::now();
@@ -538,4 +537,3 @@ void FileFile::traverseDestinationDir(
 }
 
 }
-}  // namespace facebook::wdt

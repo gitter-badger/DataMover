@@ -16,8 +16,7 @@
 #include <string>
 #include <vector>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 typedef struct addrinfo *addrInfoList;
 
@@ -169,4 +168,3 @@ class ServerSocket : public IServerSocket {
                                    addrInfoList &infoList);
 };
 }
-}  // namespace facebook::wdt

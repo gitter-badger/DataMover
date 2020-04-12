@@ -14,8 +14,7 @@
 #include <iostream>
 #include <memory>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 class FileWdtThread;
 class TransferHistoryController;
@@ -220,4 +219,3 @@ class FileWdt : public WdtBase {
   std::unique_ptr<TransferHistoryController> transferHistoryController_;
 };
 }
-}  // namespace facebook::wdt

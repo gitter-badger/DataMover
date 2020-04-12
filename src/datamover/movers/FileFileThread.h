@@ -7,8 +7,7 @@
 #include <datamover/util/ThreadTransferHistory.h>
 #include <thread>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 class DirectorySourceQueue;
 
@@ -123,5 +122,4 @@ class FileFileThread : public WdtThread {
   std::unique_ptr<IAbortChecker> threadAbortChecker_{nullptr};
 
 };
-}
 }

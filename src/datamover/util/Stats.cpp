@@ -21,8 +21,7 @@
 #include <iomanip>
 #include <sstream>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 /*static*/
 const size_t Histogram::kLastIndex;  // storage placeholder- value is from .h
@@ -290,4 +289,3 @@ void Histogram::reset() {
   memset((void*)hdata_, 0, sizeof(hdata_));
 }
 }
-} /* namespace facebook::wormhole */

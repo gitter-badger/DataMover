@@ -8,8 +8,7 @@
  */
 #include <datamover/util/CommonImpl.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 Buffer::Buffer(const int64_t size) {
   WDT_CHECK_EQ(0, size % kDiskBlockSize);
@@ -93,6 +92,5 @@ void ThreadCtx::setAbortChecker(IAbortChecker const* abortChecker) {
 
 const IAbortChecker* ThreadCtx::getAbortChecker() const {
   return abortChecker_;
-}
 }
 }

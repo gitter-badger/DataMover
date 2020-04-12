@@ -21,8 +21,7 @@
 #include <string>
 #include <unordered_set>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 /**
  * Utility class for creating/opening files for writing while
@@ -195,5 +194,4 @@ class FileCreator {
   // Set to prevent creating files
   bool skipWrites_;
 };
-}
 }

@@ -15,8 +15,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 bool FileCreator::setFileSize(ThreadCtx &threadCtx, int fd, int64_t fileSize) {
   struct stat fileStat;
@@ -338,6 +337,5 @@ void FileCreator::addTrailingSlash(string &path) {
     path.push_back('/');
     WVLOG(1) << "Added missing trailing / to " << path;
   }
-}
 }
 }

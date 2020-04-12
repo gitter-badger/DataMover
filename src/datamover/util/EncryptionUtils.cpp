@@ -17,8 +17,7 @@
 
 #include <string.h>  // for memset
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 using std::string;
 
@@ -519,4 +518,3 @@ AESDecryptor::~AESDecryptor() {
   finish(tag);
 }
 }
-}  // end of namespaces

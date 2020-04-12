@@ -21,8 +21,7 @@
 #include <unistd.h>
 #include <thread>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 void WdtFile::addCheckpoint(Checkpoint checkpoint) {
   WLOG(INFO) << "Adding global checkpoint " << checkpoint.port << " "
@@ -562,4 +561,3 @@ void WdtFile::fixAndCloseTransferLog(bool transferSuccess) {
   }
 }
 }
-}  // namespace facebook::wdt

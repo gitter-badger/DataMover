@@ -14,8 +14,7 @@
 using namespace std;
 using folly::StringPiece;
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 WdtUri::WdtUri(const string& url) {
   errorCode_ = process(url);
@@ -515,6 +514,5 @@ std::ostream& operator<<(std::ostream& os, const WdtTransferRequest& req) {
   // enough for logging purpose.
   os << "WdtTransferRequest represented by url: " << req.getLogSafeString();
   return os;
-}
 }
 }

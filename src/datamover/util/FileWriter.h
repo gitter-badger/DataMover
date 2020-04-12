@@ -13,8 +13,7 @@
 #include <datamover/util/Writer.h>
 #include <datamover/util/FileCreator.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 class FileWriter : public Writer {
  public:
@@ -83,5 +82,4 @@ class FileWriter : public Writer {
   /// reference to file creator
   FileCreator *fileCreator_;
 };
-}
 }

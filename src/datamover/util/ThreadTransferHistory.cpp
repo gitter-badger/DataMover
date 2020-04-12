@@ -9,8 +9,7 @@
 #include <datamover/util/ThreadTransferHistory.h>
 #include <datamover/movers/FileWdt.h> //FIXME
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 ThreadTransferHistory::ThreadTransferHistory(DirectorySourceQueue &queue,
                                              TransferStats &threadStats,
@@ -281,6 +280,5 @@ void TransferHistoryController::handleGlobalCheckpoint(
   }
   WVLOG(1) << "received global checkpoint " << checkpoint;
   it->second->setGlobalCheckpoint(checkpoint);
-}
 }
 }

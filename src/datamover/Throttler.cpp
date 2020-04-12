@@ -10,8 +10,7 @@
 #include <datamover/ErrorCodes.h>
 #include <datamover/WdtOptions.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 // Constants for different calculations
 const int64_t kMillisecsPerSec = 1000;
@@ -285,6 +284,5 @@ std::ostream& operator<<(std::ostream& stream, const Throttler& throttler) {
          << ", bucketLimit: " << throttler.tokenBucketLimit_
          << ", throttlerLogTimeMillis: " << throttler.throttlerLogTimeMillis_;
   return stream;
-}
 }
 }

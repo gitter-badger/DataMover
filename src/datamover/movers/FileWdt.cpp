@@ -19,8 +19,7 @@
 #include <folly/ScopeGuard.h>
 #include <folly/String.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 void FileWdt::endCurTransfer() {
   endTime_ = Clock::now();
@@ -460,4 +459,3 @@ void FileWdt::logPerfStats() const {
   WLOG(INFO) << report;
 }
 }
-}  // namespace facebook::wdt

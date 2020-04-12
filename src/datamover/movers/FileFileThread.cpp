@@ -9,8 +9,7 @@
 #include <datamover/util/FileWriter.h>
 #include <sys/stat.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 const FileFileThread::StateFunction FileFileThread::stateMap_[] = {
     &FileFileThread::copyFileChunk,
@@ -238,5 +237,3 @@ ErrorCode FileFileThread::getThreadAbortCode() {
 }
 
 }
-}
-

@@ -3,8 +3,7 @@
 
 using std::string;
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 // this must be called first and exactly once:
 Wdt &Wdt::initializeWdt(const std::string &appName) {
@@ -229,5 +228,4 @@ void Wdt::releaseWdt(const std::string &appName) {
   }
   s_wdtMap.erase(it);
 }
-}  // namespace wdt
-}  // namespace facebook
+}

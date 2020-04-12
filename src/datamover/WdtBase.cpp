@@ -11,8 +11,7 @@
 #include <random>
 using namespace std;
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 // TODO: force callers to pass options in
 WdtBase::WdtBase() : abortCheckerCallback_(this) {
@@ -204,4 +203,3 @@ string WdtBase::generateTransferId() {
   return transferId;
 }
 }
-}  // namespace facebook::wdt

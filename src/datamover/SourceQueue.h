@@ -12,8 +12,7 @@
 
 #include <datamover/ByteSource.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 /**
  * Interface for consuming data from multiple ByteSource's.
@@ -52,5 +51,4 @@ class SourceQueue {
   /// @return         total size of files processed/enqueued
   virtual int64_t getTotalSize() const = 0;
 };
-}
 }

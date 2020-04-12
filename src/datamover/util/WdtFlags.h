@@ -12,8 +12,8 @@
 
 #include <datamover/WdtOptions.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
+
 class WdtFlags {
  public:
   /**
@@ -27,5 +27,4 @@ class WdtFlags {
 
   static std::set<std::string> getUserSpecifiedOptions();
 };
-}
 }

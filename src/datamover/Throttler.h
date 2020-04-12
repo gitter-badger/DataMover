@@ -11,8 +11,8 @@
 #include <glog/logging.h>
 #include <datamover/util/CommonImpl.h>
 #include <thread>
-namespace facebook {
-namespace wdt {
+
+namespace datamover {
 
 struct ThrottlerOptions {
   /**
@@ -203,4 +203,3 @@ class Throttler {
   int64_t throttlerLogTimeMillis_;
 };
 }
-}  // facebook::wdt

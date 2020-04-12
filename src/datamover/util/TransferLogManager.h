@@ -19,8 +19,7 @@
 #include <string>
 #include <thread>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 /**
  * Download Resumption in WDT:
@@ -380,5 +379,4 @@ class LogParser {
   /// set of invalid seq-ids
   std::set<int64_t> invalidSeqIds_;
 };
-}
 }

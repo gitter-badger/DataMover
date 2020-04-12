@@ -12,8 +12,7 @@
 #include <datamover/ErrorCodes.h>
 #include <string>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 /// make a byterange from ptr size and offset (byte range starts at
 /// dest + offset and ends at dest + size)
@@ -239,6 +238,5 @@ inline bool decodeVarI64(const char *data, size_t datalen, int64_t &pos,
     res = decodeZigZag(v);
   }
   return ok;
-}
 }
 }

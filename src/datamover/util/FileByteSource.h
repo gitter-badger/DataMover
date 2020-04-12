@@ -13,8 +13,7 @@
 #include <datamover/ByteSource.h>
 #include <datamover/util/CommonImpl.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 /// File related code
 class FileUtil {
@@ -150,5 +149,4 @@ class FileByteSource : public ByteSource {
   /// transfer stats
   TransferStats transferStats_;
 };
-}
 }

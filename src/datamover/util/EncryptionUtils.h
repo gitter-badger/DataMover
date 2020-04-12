@@ -13,8 +13,7 @@
 #include <datamover/ErrorCodes.h>
 #include <string>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 /// AES encryption block size
 const int kAESBlockSize = 16;
@@ -208,4 +207,3 @@ class AESDecryptor : public AESBase {
                              const std::string& tag);
 };
 }
-}  // End of namespaces

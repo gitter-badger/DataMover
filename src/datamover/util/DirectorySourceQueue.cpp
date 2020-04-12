@@ -24,8 +24,7 @@
 // (so code like opening files during discovery is disabled by default and
 // no reading the config directly from the options and only set by the Sender)
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 using std::string;
 
@@ -705,6 +704,5 @@ std::unique_ptr<ByteSource> DirectorySourceQueue::getNextSource(
     lock.lock();
     failedSourceStats_.emplace_back(std::move(source->getTransferStats()));
   }
-}
 }
 }

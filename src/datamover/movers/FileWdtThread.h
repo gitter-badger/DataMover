@@ -14,8 +14,7 @@
 #include <datamover/util/ThreadTransferHistory.h>
 #include <thread>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 class DirectorySourceQueue;
 
@@ -311,5 +310,4 @@ class FileWdtThread : public WdtThread {
   /// Thread history controller shared across all threads
   TransferHistoryController *transferHistoryController_;
 };
-}
 }

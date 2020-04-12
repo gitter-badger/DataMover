@@ -17,13 +17,12 @@
 
 WDT_FLAG_DEFINITION(
     string, WDT_FLAG_SYM(option_type),
-    facebook::wdt::WdtOptions::FLASH_OPTION_TYPE,
+    datamover::WdtOptions::FLASH_OPTION_TYPE,
     "WDT option type. Options are initialized to different values "
     "depending on the type. Individual options can still be changed using "
     "specific flags. Use -" WDT_FLAG_STR(print_options) " to see values")
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 const std::string FLAGS_PREFIX = WDT_TOSTR(WDT_LONG_PREFIX);
 
@@ -73,6 +72,5 @@ void WdtFlags::printOptions(std::ostream &out, const WdtOptions &options) {
 #define PRINT_OPT
 #include "WdtFlags.cpp.inc"  //nolint
 #undef PRINT_OPT
-}
 }
 }

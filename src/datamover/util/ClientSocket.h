@@ -14,8 +14,8 @@
 #include <datamover/util/IClientSocket.h>
 #include <string>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
+
 class ClientSocket : public IClientSocket {
  public:
   ClientSocket(ThreadCtx &threadCtx, const std::string &dest, int port,
@@ -123,4 +123,3 @@ class ClientSocket : public IClientSocket {
   ThreadCtx &threadCtx_;
 };
 }
-}  // namespace facebook::wdt

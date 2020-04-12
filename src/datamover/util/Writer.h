@@ -10,8 +10,8 @@
 
 #include <datamover/ErrorCodes.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
+
 /**
  * Interface to write received data
  */
@@ -46,5 +46,4 @@ class Writer {
   /// close the writer
   virtual ErrorCode close() = 0;
 };
-}
 }

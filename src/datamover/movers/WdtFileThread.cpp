@@ -15,8 +15,7 @@
 #include <folly/lang/Bits.h>
 #include <datamover/util/FileWriter.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 const static int kTimeoutBufferMillis = 1000;
 const static int kWaitTimeoutFactor = 5;
@@ -1064,5 +1063,4 @@ void WdtFileThread::reset() {
 
 WdtFileThread::~WdtFileThread() {
 }
-}  // namespace wdt
-}  // namespace facebook
+}

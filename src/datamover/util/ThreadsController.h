@@ -15,8 +15,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 class WdtThread;
 /**
@@ -371,5 +370,4 @@ class ThreadsController {
   /// Vector of barriers, can be read/modified by get/set barrier methods
   std::vector<std::shared_ptr<Barrier>> barriers_;
 };
-}
 }

@@ -24,8 +24,7 @@
 
 #include <folly/synchronization/RWSpinLock.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 const double kMbToB = 1024 * 1024;
 const double kMicroToMilli = 1000;
@@ -605,5 +604,4 @@ class PerfStatReport {
   /// mutex to support synchronized access
   mutable folly::RWSpinLock mutex_;
 };
-}
 }

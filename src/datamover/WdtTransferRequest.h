@@ -15,8 +15,8 @@
 #include <string>
 #include <vector>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
+
 /**
  * Users of wdt apis can provide a list of info
  * for files. A info represents a file name with
@@ -267,5 +267,4 @@ struct WdtTransferRequest {
    */
   std::string generateUrlInternal(bool genFull, bool forLogging) const;
 };
-}
 }

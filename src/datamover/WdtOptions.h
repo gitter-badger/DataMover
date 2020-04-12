@@ -15,8 +15,8 @@
 #include <set>
 #include <string>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
+
 struct ThrottlerOptions;
 
 /**
@@ -468,5 +468,4 @@ class WdtOptions {
  private:
   WdtOptions& operator=(const WdtOptions&) = default;
 };
-}
 }

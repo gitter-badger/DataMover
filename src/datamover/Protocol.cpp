@@ -12,8 +12,7 @@
 #include <datamover/WdtOptions.h>
 #include <datamover/util/SerializationUtil.h>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 using std::string;
 using folly::ByteRange;
@@ -561,6 +560,5 @@ bool Protocol::decodeFooter(char *src, int64_t &off, int64_t max,
   bool ok = decodeInt32(br, checksum);
   off += offset(br, obr);
   return ok;
-}
 }
 }

@@ -63,8 +63,7 @@
 
 #include "glog/logging.h"
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 // Note that atomic operations across threads are actually quite slow
 // so we use ThreadLocal storage instead and swipe the aggregates
@@ -623,6 +622,5 @@ class PeriodicCounters : private boost::noncopyable {
   std::thread thread_;
 };
 }
-} /* namespace facebook::wormhole */
 
 #endif /* STATS_H_ */

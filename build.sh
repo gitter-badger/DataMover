@@ -8,7 +8,7 @@
 #    - libtool
 
 TMP_DIR=/var/tmp/dm_build
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/src/datamover/"
 
 mkdir -p $TMP_DIR
 rm -Rf $TMP_DIR
@@ -57,7 +57,7 @@ rm -Rf dm_install
 mkdir -p dm_install
 
 cmake \
-    $SCRIPT_DIR \
+    $SRC_DIR \
     -DBUILD_TESTING=off \
     -DFOLLY_SOURCE_DIR=${TMP_DIR}/folly \
     -DBOOST_INCLUDEDIR=/usr/include/boost169 \

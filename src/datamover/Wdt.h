@@ -20,8 +20,7 @@
 #include <datamover/util/EncryptionUtils.h>
 #include <ostream>
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 // Note: we use Wdt in the method names even if redundant with the class name
 // so we can search callers easily
@@ -157,4 +156,3 @@ class Wdt {
   Wdt &operator=(const Wdt &) = delete;
 };
 }
-}  // namespaces

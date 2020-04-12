@@ -11,8 +11,7 @@
 using namespace std;
 const int64_t kDelTimeToSleepMillis = 100;
 
-namespace facebook {
-namespace wdt {
+namespace datamover {
 
 const char *const WdtResourceController::kGlobalNamespace("Global");
 
@@ -715,5 +714,4 @@ void WdtResourceController::requireRegistration(bool strict) {
   strictRegistration_ = strict;
 }
 
-}  // namespace wdt
-}  // namespace facebook
+}
