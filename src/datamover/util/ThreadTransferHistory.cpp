@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
-#include <datamover/util/ThreadTransferHistory.h>
+#include <datamover/endpoints/file/ThreadTransferHistory.h>
 #include <datamover/movers/FileWdt.h> //FIXME
 
 namespace datamover {

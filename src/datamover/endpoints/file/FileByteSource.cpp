@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
-#include <datamover/util/FileByteSource.h>
+#include <datamover/endpoints/file/FileByteSource.h>
 
 #include <fcntl.h>
 #include <glog/logging.h>

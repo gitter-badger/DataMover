@@ -3,7 +3,7 @@
 
 #include <datamover/WdtBase.h>
 #include <datamover/util/TransferLogManager.h>
-#include <datamover/util/S3Writer.h>
+#include <datamover/endpoints/s3/S3Writer.h>
 #include <chrono>
 #include <iostream>
 #include <memory>

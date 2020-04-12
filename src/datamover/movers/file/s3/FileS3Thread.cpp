@@ -5,7 +5,7 @@
 #include <folly/ScopeGuard.h>
 #include <folly/String.h>
 #include <folly/lang/Bits.h>
-#include <datamover/util/FileWriter.h>
+#include <datamover/endpoints/file/FileWriter.h>
 #include <openssl/md5.h>
 #include <sys/stat.h>
 

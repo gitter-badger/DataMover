@@ -12,7 +12,7 @@
 #include <unordered_map>
 #include <memory>
 
-#include <datamover/util/S3Writer.h>
+#include <datamover/endpoints/s3/S3Writer.h>
 #include <datamover/util/CommonImpl.h>
 #include <datamover/movers/FileS3.h>
 

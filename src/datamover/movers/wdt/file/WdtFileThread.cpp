@@ -13,7 +13,7 @@
 #include <folly/String.h>
 #include <folly/hash/Checksum.h>
 #include <folly/lang/Bits.h>
-#include <datamover/util/FileWriter.h>
+#include <datamover/endpoints/file/FileWriter.h>
 
 namespace datamover {
 

@@ -2,7 +2,7 @@
 #pragma once
 
 #include <datamover/WdtBase.h>
-#include <datamover/util/FileCreator.h>
+#include <datamover/endpoints/file/FileCreator.h>
 #include <chrono>
 #include <iostream>
 #include <memory>

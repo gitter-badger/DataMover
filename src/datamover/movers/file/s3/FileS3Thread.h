@@ -5,7 +5,7 @@
 #include <datamover/WdtThread.h>
 #include <datamover/movers/FileS3.h>
 #include <datamover/util/ThreadTransferHistory.h>
-#include <datamover/util/S3Writer.h>
+#include <datamover/endpoints/s3/S3Writer.h>
 #include <thread>
 
 namespace datamover {
