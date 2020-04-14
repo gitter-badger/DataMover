@@ -1,5 +1,5 @@
 
-#include <datamover/movers/FileS3Thread.h>
+#include <datamover/movers/file/s3/FileS3Thread.h>
 #include <folly/Conv.h>
 #include <folly/Memory.h>
 #include <folly/ScopeGuard.h>

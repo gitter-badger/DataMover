@@ -94,36 +94,32 @@ set (FOLLY_CPP_SRC
 
 add_library(datamover_min
 WdtTransferRequest.cpp
-WdtResourceController.cpp
 WdtOptions.cpp
 util/CommonImpl.cpp
 util/ServerSocket.cpp
 util/Stats.cpp
 util/ClientSocket.cpp
 util/ThreadTransferHistory.cpp
-util/FileWriter.cpp
-util/S3Writer.cpp
-util/DirectorySourceQueue.cpp
 util/SerializationUtil.cpp
 util/WdtSocket.cpp
 util/ThreadsController.cpp
 util/EncryptionUtils.cpp
-util/FileByteSource.cpp
 util/TransferLogManager.cpp
-util/FileCreator.cpp
+endpoints/file/FileWriter.cpp
+endpoints/file/DirectorySourceQueue.cpp
+endpoints/file/FileByteSource.cpp
+endpoints/file/FileCreator.cpp
 Reporting.cpp
 Throttler.cpp
 ErrorCodes.cpp
 WdtThread.cpp
-movers/WdtFile.cpp
-movers/FileWdtThread.cpp
-movers/FileFileThread.cpp
-movers/WdtFileThread.cpp
-movers/FileFile.cpp
-movers/FileWdt.cpp
-movers/FileS3.cpp
-movers/FileS3Thread.cpp
-WdtBase.cpp
+movers/wdt/file/WdtFile.cpp
+movers/wdt/file/WdtFileThread.cpp
+movers/file/file/FileFileThread.cpp
+movers/file/file/FileFile.cpp
+movers/file/wdt/FileWdt.cpp
+movers/file/wdt/FileWdtThread.cpp
+movers/MoverBase.cpp
 Protocol.cpp
 )
 
@@ -138,7 +134,6 @@ TARGET_LINK_LIBRARIES(datamover_min
 # Source files that depend on gflags and provide flags -> options init
 set (DM_FLAGS_RELATED_SRC
 util/WdtFlags.cpp
-Wdt.cpp
 )
 add_library(datamover ${DM_FLAGS_RELATED_SRC})
 

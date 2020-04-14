@@ -7,8 +7,8 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  */
 #pragma once
-#include <datamover/movers/WdtFile.h>
-#include <datamover/WdtBase.h>
+#include <datamover/movers/wdt/file/WdtFile.h>
+#include <datamover/movers/MoverBase.h>
 #include <datamover/WdtThread.h>
 #include <datamover/util/ServerSocket.h>
 

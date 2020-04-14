@@ -1,8 +1,8 @@
 
 #pragma once
 #include <folly/Conv.h>
-#include <datamover/movers/FileFile.h>
-#include <datamover/WdtBase.h>
+#include <datamover/movers/file/file/FileFile.h>
+#include <datamover/movers/MoverBase.h>
 #include <datamover/WdtThread.h>
 #include <datamover/util/ThreadTransferHistory.h>
 #include <thread>

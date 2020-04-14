@@ -10,6 +10,7 @@
 TMP_DIR=/var/tmp/dm_build
 SRC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )/src/datamover/"
 
+if true; then
 mkdir -p $TMP_DIR
 rm -Rf $TMP_DIR
 mkdir -p $TMP_DIR
@@ -52,6 +53,8 @@ cd ../
 ## DataMover
 ##################################
 
+fi
+cd $TMP_DIR
 mkdir -p dm_install
 rm -Rf dm_install
 mkdir -p dm_install

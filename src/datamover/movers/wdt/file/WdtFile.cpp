@@ -6,7 +6,7 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
-#include <datamover/movers/WdtFile.h>
+#include <datamover/movers/wdt/file/WdtFile.h>
 #include <datamover/util/EncryptionUtils.h>
 #include <datamover/util/ServerSocket.h>
 

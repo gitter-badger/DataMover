@@ -8,7 +8,7 @@
  */
 #pragma once
 
-#include <datamover/WdtBase.h>
+#include <datamover/movers/MoverBase.h>
 #include <datamover/util/ClientSocket.h>
 #include <chrono>
 #include <iostream>

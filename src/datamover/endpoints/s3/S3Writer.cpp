@@ -14,7 +14,6 @@
 
 #include <datamover/endpoints/s3/S3Writer.h>
 #include <datamover/util/CommonImpl.h>
-#include <datamover/movers/FileS3.h>
 
 #include <fcntl.h>
 #include <gflags/gflags.h>

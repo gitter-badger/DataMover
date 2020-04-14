@@ -1,5 +1,5 @@
 
-#include <datamover/movers/FileFileThread.h>
+#include <datamover/movers/file/file/FileFileThread.h>
 #include <folly/Conv.h>
 #include <folly/Memory.h>
 #include <folly/ScopeGuard.h>

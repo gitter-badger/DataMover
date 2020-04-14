@@ -10,7 +10,7 @@
 #include <folly/SpinLock.h>
 #include <datamover/Protocol.h>
 #include <datamover/Reporting.h>
-#include <datamover/util/DirectorySourceQueue.h>
+#include <datamover/endpoints/SourceQueue.h>
 #include <vector>
 
 namespace datamover {
@@ -22,7 +22,7 @@ class ThreadTransferHistory {
    * @param queue        directory queue
    * @param threadStats  stat object of the thread
    */
-  ThreadTransferHistory(DirectorySourceQueue &queue, TransferStats &threadStats,
+  ThreadTransferHistory(SourceQueue &queue, TransferStats &threadStats,
                         int32_t port);
 
   /**
@@ -63,6 +63,14 @@ class ThreadTransferHistory {
    * returns all unacked sources to the queue
    */
   void returnUnackedSourcesToQueue();
+
+  /**
+   * returns sources to the queue, checks for fail/retries, doesn't increment
+   * numentries
+   *
+   * @param sources               sources to be returned to the queue
+   */
+  void returnToQueue(std::vector<std::unique_ptr<ByteSource>> &sources);
 
   /**
    * @return    number of sources acked by the receiver
@@ -111,7 +119,7 @@ class ThreadTransferHistory {
                                           bool globalCheckpoint);
 
   /// reference to global queue
-  DirectorySourceQueue &queue_;
+  SourceQueue &queue_;
   /// reference to thread stats
   TransferStats &threadStats_;
   /// history of the thread
@@ -137,9 +145,9 @@ class TransferHistoryController {
  public:
   /**
    * Constructor for the history controller
-   * @param dirQueue      Directory queue used by the sender
+   * @param dirQueue      source queue used by the sender
    */
-  explicit TransferHistoryController(DirectorySourceQueue &dirQueue);
+  explicit TransferHistoryController(SourceQueue &dirQueue);
 
   /**
    * Add transfer history for a thread
@@ -159,7 +167,7 @@ class TransferHistoryController {
 
  private:
   /// Reference to the directory queue being used by the sender
-  DirectorySourceQueue &dirQueue_;
+  SourceQueue &dirQueue_;
 
   /// Map of port (used by sender threads) and transfer history
   std::unordered_map<int32_t, std::unique_ptr<ThreadTransferHistory>>

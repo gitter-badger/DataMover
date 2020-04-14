@@ -1,6 +1,6 @@
 
-#include <datamover/movers/FileS3.h>
-#include <datamover/movers/FileS3Thread.h>
+#include <datamover/movers/file/s3/FileS3.h>
+#include <datamover/movers/file/s3/FileS3Thread.h>
 #include <datamover/Throttler.h>
 
 #include <folly/lang/Bits.h>

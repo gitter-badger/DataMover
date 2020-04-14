@@ -1,6 +1,6 @@
 
-#include <datamover/movers/FileFile.h>
-#include <datamover/movers/FileFileThread.h>
+#include <datamover/movers/file/file/FileFile.h>
+#include <datamover/movers/file/file/FileFileThread.h>
 #include <datamover/Throttler.h>
 
 #include <folly/lang/Bits.h>

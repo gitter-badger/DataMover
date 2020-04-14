@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <datamover/WdtBase.h>
+#include <datamover/movers/MoverBase.h>
 #include <datamover/util/TransferLogManager.h>
 #include <datamover/endpoints/s3/S3Writer.h>
 #include <chrono>

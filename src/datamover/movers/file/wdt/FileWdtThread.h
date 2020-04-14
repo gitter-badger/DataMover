@@ -8,7 +8,7 @@
  */
 #pragma once
 #include <folly/Conv.h>
-#include <datamover/movers/FileWdt.h>
+#include <datamover/movers/file/wdt/FileWdt.h>
 #include <datamover/WdtThread.h>
 #include <datamover/util/IClientSocket.h>
 #include <datamover/util/ThreadTransferHistory.h>

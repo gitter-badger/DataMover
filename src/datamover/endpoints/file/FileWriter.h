@@ -11,7 +11,7 @@
 #include <datamover/Protocol.h>
 #include <datamover/WdtConfig.h>
 #include <datamover/util/Writer.h>
-#include <datamover/util/FileCreator.h>
+#include <datamover/endpoints/file/FileCreator.h>
 
 namespace datamover {
 

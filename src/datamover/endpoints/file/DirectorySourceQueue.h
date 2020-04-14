@@ -20,9 +20,9 @@
 #include <utility>
 
 #include <datamover/Protocol.h>
-#include <datamover/SourceQueue.h>
+#include <datamover/endpoints/SourceQueue.h>
 #include <datamover/WdtTransferRequest.h>
-#include <datamover/util/FileByteSource.h>
+#include <datamover/endpoints/file/FileByteSource.h>
 
 namespace datamover {
 /**
@@ -72,46 +72,6 @@ class DirectorySourceQueue : public SourceQueue {
    */
   std::thread buildQueueAsynchronously();
 
-  /// @return true iff all regular files under root dir have been consumed
-  bool finished() const override;
-
-  /// @return true if all the files have been discovered, false otherwise
-  bool fileDiscoveryFinished() const;
-
-  /**
-   * @param callerThreadCtx context of the calling thread
-   * @param status          this variable is set to the status of the transfer
-   *
-   * @return next FileByteSource to consume or nullptr when finished
-   */
-  std::unique_ptr<ByteSource> getNextSource(ThreadCtx *callerThreadCtx,
-                                            ErrorCode &status) override;
-
-  /// @return         total number of files processed/enqueued
-  int64_t getCount() const override;
-
-  /// @return         total size of files processed/enqueued
-  int64_t getTotalSize() const override;
-
-  /// @return         total number of blocks and status of the transfer
-  std::pair<int64_t, ErrorCode> getNumBlocksAndStatus() const;
-
-  /// @return         perf report
-  const PerfStatReport &getPerfReport() const;
-
-  /**
-   * Sets regex representing files to include for transfer
-   *
-   * @param includePattern          file inclusion regex
-   */
-  void setIncludePattern(const std::string &includePattern);
-
-  /**
-   * Sets regex representing files to exclude for transfer
-   *
-   * @param excludePattern          file exclusion regex
-   */
-  void setExcludePattern(const std::string &excludePattern);
 
   /**
    * Sets regex representing directories to exclude for transfer
@@ -179,22 +139,6 @@ class DirectorySourceQueue : public SourceQueue {
       std::vector<FileChunksInfo> &previouslyTransferredChunks);
 
   /**
-   * returns sources to the queue, checks for fail/retries, doesn't increment
-   * numentries
-   *
-   * @param sources               sources to be returned to the queue
-   */
-  void returnToQueue(std::vector<std::unique_ptr<ByteSource>> &sources);
-
-  /**
-   * returns a source to the queue, checks for fail/retries, doesn't increment
-   * numentries
-   *
-   * @param source                source to be returned to the queue
-   */
-  void returnToQueue(std::unique_ptr<ByteSource> &source);
-
-  /**
    * Returns list of files which were not transferred. It empties the queue and
    * adds queue entries to the failed file list. This function should be called
    * after all the sending threads have finished execution
@@ -210,9 +154,6 @@ class DirectorySourceQueue : public SourceQueue {
   int64_t getPreviouslySentBytes() const;
 
   ~DirectorySourceQueue() override;
-
-  /// @return   discovered files metadata
-  std::vector<SourceMetaData *> &getDiscoveredFilesMetaData();
 
   /// Returns the time it took to traverse the directory tree
   double getDirectoryTime() const {
@@ -266,14 +207,6 @@ class DirectorySourceQueue : public SourceQueue {
    */
   void createIntoQueueInternal(SourceMetaData *metadata);
 
-  /**
-   * when adding multiple files, we have the option of using notify_one multiple
-   * times or notify_all once. Depending on number of added sources, this
-   * function uses either notify_one or notify_all
-   *
-   * @param addedSource     number of sources added
-   */
-  void smartNotify(int32_t addedSource);
 
   /// Removes all elements from the source queue
   void clearSourceQueue();
@@ -281,39 +214,7 @@ class DirectorySourceQueue : public SourceQueue {
   /// if file deletion is enabled, extra files to be deleted are enqueued. This
   /// method should be called while holding the lock
   void enqueueFilesToBeDeleted();
-
-  std::unique_ptr<ThreadCtx> threadCtx_{nullptr};
-
-  /// root directory to recurse on if fileInfo_ is empty
-  std::string rootDir_;
-
-  /// regex representing directories to prune
-  std::string pruneDirPattern_;
-
-  /// regex representing files to include
-  std::string includePattern_;
-
-  /// regex representing files to exclude
-  std::string excludePattern_;
-
-  /// Block size in mb
-  int64_t blockSizeMbytes_{0};
-
-  /// List of files to enqueue instead of recursing over rootDir_.
-  std::vector<WdtFileInfo> fileInfo_;
-
-  /// protects initCalled_/initFinished_/sourceQueue_/failedSourceStats_
-  mutable std::mutex mutex_;
-
-  /// condition variable indicating sourceQueue_ is not empty
-  mutable std::condition_variable conditionNotEmpty_;
-
-  /// Indicates whether init() has been called to prevent multiple calls
-  bool initCalled_{false};
-
-  /// Indicates whether call to init() has finished
-  bool initFinished_{false};
-
+ 
   struct SourceComparator {
     bool operator()(const std::unique_ptr<ByteSource> &source1,
                     const std::unique_ptr<ByteSource> &source2) {
@@ -340,18 +241,6 @@ class DirectorySourceQueue : public SourceQueue {
       return source1->getIdentifier() > source2->getIdentifier();
     }
   };
-
-  /**
-   * priority queue of sources. Sources are first ordered by increasing
-   * failedAttempts, then by decreasing size. If sizes are equal(always for
-   * blocks), sources are ordered by offset. This way, we ensure that all the
-   * threads in the receiver side are not writing to the same file at the same
-   * time.
-   */
-  std::priority_queue<std::unique_ptr<ByteSource>,
-                      std::vector<std::unique_ptr<ByteSource>>,
-                      SourceComparator>
-      sourceQueue_;
 
   /// Transfer stats for sources which are not transferred
   std::vector<TransferStats> failedSourceStats_;

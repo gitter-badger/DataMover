@@ -6,12 +6,13 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
-#include <datamover/endpoints/file/ThreadTransferHistory.h>
-#include <datamover/movers/FileWdt.h> //FIXME
+#include <datamover/util/ThreadTransferHistory.h>
+#include <datamover/endpoints/SourceQueue.h>
+//#include <datamover/movers/FileWdt.h> //FIXME
 
 namespace datamover {
 
-ThreadTransferHistory::ThreadTransferHistory(DirectorySourceQueue &queue,
+ThreadTransferHistory::ThreadTransferHistory(SourceQueue &queue,
                                              TransferStats &threadStats,
                                              int32_t port)
     : queue_(queue), threadStats_(threadStats), port_(port) {
@@ -237,7 +238,7 @@ void ThreadTransferHistory::markNotInUse() {
 }
 
 TransferHistoryController::TransferHistoryController(
-    DirectorySourceQueue &dirQueue)
+    SourceQueue &dirQueue)
     : dirQueue_(dirQueue) {
 }
 

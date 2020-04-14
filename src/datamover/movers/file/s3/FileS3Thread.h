@@ -1,9 +1,9 @@
 
 #pragma once
 #include <folly/Conv.h>
-#include <datamover/WdtBase.h>
+#include <datamover/movers/MoverBase.h>
 #include <datamover/WdtThread.h>
-#include <datamover/movers/FileS3.h>
+#include <datamover/movers/file/s3/FileS3.h>
 #include <datamover/util/ThreadTransferHistory.h>
 #include <datamover/endpoints/s3/S3Writer.h>
 #include <thread>
