@@ -87,19 +87,19 @@ cd $RPM_BUILD_ROOT
 ##################################
 ## Double conversion
 ##################################
-git clone https://github.com/floitsch/double-conversion.git
-cd double-conversion;
-mkdir build
-cd build
-cmake \
-    .. \
-    -DCMAKE_PREFIX_PATH="${INST_DIR}/usr/local/" \
-    -DCMAKE_INSTALL_PREFIX="${INST_DIR}/usr/local/" \
-    -DBUILD_SHARED_LIBS=on
-
-make -j
-make install
-cd $RPM_BUILD_ROOT
+#git clone https://github.com/floitsch/double-conversion.git
+#cd double-conversion;
+#mkdir build
+#cd build
+#cmake \
+#    .. \
+#    -DCMAKE_PREFIX_PATH="${INST_DIR}/usr/local/" \
+#    -DCMAKE_INSTALL_PREFIX="${INST_DIR}/usr/local/" \
+#    -DBUILD_SHARED_LIBS=on
+#
+#make -j
+#make install
+#cd $RPM_BUILD_ROOT
 
 ##################################
 ## DataMover
@@ -115,7 +115,7 @@ ln -s DataMover wdt
 cd ${RPM_BUILD_ROOT}/dm_build
 
 cmake3 \
-    ${RPM_BUILD_ROOT}/DataMover \
+    ${RPM_BUILD_ROOT}/DataMover/src/datamover \
     -DBUILD_TESTING=off \
     -DFOLLY_SOURCE_DIR=${RPM_BUILD_ROOT}/folly \
     -DBOOST_INCLUDEDIR=/usr/include/boost169 \

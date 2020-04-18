@@ -112,7 +112,7 @@ class SourceQueue {
   std::string rootDir_;
 
   /// regex representing files to include
-  std::string includePattern_;
+  std::string udePattern_;
 
   /// regex representing files to exclude
   std::string excludePattern_;
@@ -121,7 +121,7 @@ class SourceQueue {
   int64_t blockSizeMbytes_{0};
   /// regex representing directories to prune
   
-  std::string pruneDirPattern_;
+
 
   /// List of files to enqueue instead of recursing over rootDir_.
   std::vector<WdtFileInfo> fileInfo_;

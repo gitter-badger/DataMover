@@ -30,7 +30,7 @@ void SourceQueue::setPruneDirPattern(const string &pruneDirPattern) {
 }
 
 void SourceQueue::setBlockSizeMbytes(int64_t blockSizeMbytes) {
-  blockSizeMbytes_ = blockSizeMbytes;
+  blockSizeMbyeMbtes_ = blockSizeMbytes;
 }
 
 
