@@ -6,18 +6,19 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
+#include <datamover/Protocol.h>
+#include <datamover/WdtTransferRequest.h>
 #include <datamover/endpoints/file/DirectorySourceQueue.h>
-
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <datamover/Protocol.h>
+
 #include <algorithm>
+#include <memory>
+#include <regex>
 #include <set>
 #include <utility>
-
-#include <fcntl.h>
-#include <regex>
 
 // NOTE: this should remain standalone code and not use WdtOptions directly
 // also note this is used not just by the Sender but also by the receiver
@@ -25,7 +26,6 @@
 // no reading the config directly from the options and only set by the Sender)
 
 namespace datamover {
-
 using std::string;
 
 WdtFileInfo::WdtFileInfo(const string &name, int64_t size, bool doDirectReads)
@@ -64,14 +64,12 @@ DirectorySourceQueue::DirectorySourceQueue(const WdtOptions &options,
   setRootDir(rootDir);
 }
 
-
 void DirectorySourceQueue::setFollowSymlinks(const bool followSymlinks) {
   followSymlinks_ = followSymlinks;
   if (followSymlinks_) {
     setRootDir(rootDir_);
   }
 }
-
 
 // const ref string param but first thing we do is make a copy because
 // of logging original input vs resolved one
@@ -99,32 +97,6 @@ bool DirectorySourceQueue::setRootDir(const string &newRootDir) {
   return true;
 }
 
-
-void DirectorySourceQueue::setPreviouslyReceivedChunks(
-    std::vector<FileChunksInfo> &previouslyTransferredChunks) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  WDT_CHECK_EQ(0, numBlocksDequeued_);
-  // reset all the queue variables
-  nextSeqId_ = 0;
-  totalFileSize_ = 0;
-  numEntries_ = 0;
-  numBlocks_ = 0;
-  for (auto &chunkInfo : previouslyTransferredChunks) {
-    nextSeqId_ = std::max(nextSeqId_, chunkInfo.getSeqId() + 1);
-    auto fileName = chunkInfo.getFileName();
-    previouslyTransferredChunks_.insert(
-        std::make_pair(std::move(fileName), std::move(chunkInfo)));
-  }
-  clearSourceQueue();
-  // recreate the queue
-  for (const auto metadata : sharedFileData_) {
-    // TODO: do not notify inside createIntoQueueInternal. This method still
-    // holds the lock, so no point in notifying
-    createIntoQueueInternal(metadata);
-  }
-  enqueueFilesToBeDeleted();
-}
-
 DirectorySourceQueue::~DirectorySourceQueue() {
   // need to remove all the sources because they access metadata at the
   // destructor.
@@ -138,11 +110,6 @@ DirectorySourceQueue::~DirectorySourceQueue() {
     }
     delete fileData;
   }
-}
-
-std::thread DirectorySourceQueue::buildQueueAsynchronously() {
-  // relying on RVO (and thread not copyable to avoid multiple ones)
-  return std::thread(&DirectorySourceQueue::buildQueueSynchronously, this);
 }
 
 bool DirectorySourceQueue::buildQueueSynchronously() {
@@ -355,8 +322,6 @@ bool DirectorySourceQueue::explore() {
   return !hasError;
 }
 
-
-
 void DirectorySourceQueue::createIntoQueue(const string &fullPath,
                                            WdtFileInfo &fileInfo) {
   // TODO: currently we are treating small files(size less than blocksize) as
@@ -457,19 +422,19 @@ void DirectorySourceQueue::createIntoQueueInternal(SourceMetaData *metadata) {
     int64_t offset = chunk.start_;
     int64_t remainingBytes = chunk.size();
     int64_t blockTotal;
-    if(remainingBytes <= blockSize){
-        blockTotal = 1;
-    }else{
-        blockTotal = (remainingBytes / blockSize);
-        int64_t remainder = (remainingBytes % blockSize);
-        if(remainder > 0){
-            blockTotal++;
-        }
+    if (remainingBytes <= blockSize) {
+      blockTotal = 1;
+    } else {
+      blockTotal = (remainingBytes / blockSize);
+      int64_t remainder = (remainingBytes % blockSize);
+      if (remainder > 0) {
+        blockTotal++;
+      }
     }
     do {
       const int64_t size = std::min<int64_t>(remainingBytes, blockSize);
-      std::unique_ptr<ByteSource> source =
-          std::make_unique<FileByteSource>(metadata, size, offset, blockNumber, blockTotal);
+      std::unique_ptr<ByteSource> source = std::make_unique<FileByteSource>(
+          metadata, size, offset, blockNumber, blockTotal);
       sourceQueue_.push(std::move(source));
       remainingBytes -= size;
       offset += size;
@@ -480,19 +445,6 @@ void DirectorySourceQueue::createIntoQueueInternal(SourceMetaData *metadata) {
   numEntries_++;
   numBlocks_ += blockNumber;
   smartNotify(blockNumber);
-}
-
-std::vector<TransferStats> &DirectorySourceQueue::getFailedSourceStats() {
-  while (!sourceQueue_.empty()) {
-    failedSourceStats_.emplace_back(
-        std::move(sourceQueue_.top()->getTransferStats()));
-    sourceQueue_.pop();
-  }
-  return failedSourceStats_;
-}
-
-std::vector<string> &DirectorySourceQueue::getFailedDirectories() {
-  return failedDirectories_;
 }
 
 bool DirectorySourceQueue::enqueueFiles() {
@@ -522,7 +474,6 @@ bool DirectorySourceQueue::enqueueFiles() {
   }
   return true;
 }
-
 
 void DirectorySourceQueue::enqueueFilesToBeDeleted() {
   if (!deleteFiles_) {
@@ -564,5 +515,4 @@ void DirectorySourceQueue::enqueueFilesToBeDeleted() {
   numBlocks_ += numFilesToBeDeleted;
   smartNotify(numFilesToBeDeleted);
 }
-
-}
+}  // namespace datamover

@@ -1,5 +1,6 @@
 
 #include <datamover/endpoints/SourceQueue.h>
+#include "SourceQueue.h"
 
 namespace datamover {
 
@@ -17,23 +18,36 @@ const PerfStatReport &SourceQueue::getPerfReport() const {
   return threadCtx_->getPerfReport();
 }
 
-void SourceQueue::setIncludePattern(const string &includePattern) {
+bool datamover::SourceQueue::fileDiscoveryFinished() {
+  return false;
+}
+
+bool datamover::SourceQueue::setRootDir(const std::string &newRootDir) {
+  return false;
+}
+
+void SourceQueue::setIncludePattern(const std::string &includePattern) {
   includePattern_ = includePattern;
 }
 
-void SourceQueue::setExcludePattern(const string &excludePattern) {
+void SourceQueue::setExcludePattern(const std::string &excludePattern) {
   excludePattern_ = excludePattern;
 }
 
-void SourceQueue::setPruneDirPattern(const string &pruneDirPattern) {
+void SourceQueue::setPruneDirPattern(const std::string &pruneDirPattern) {
   pruneDirPattern_ = pruneDirPattern;
 }
 
 void SourceQueue::setBlockSizeMbytes(int64_t blockSizeMbytes) {
-  blockSizeMbyeMbtes_ = blockSizeMbytes;
+  blockSizeMbytes_ = blockSizeMbytes;
 }
 
+void SourceQueue::createIntoQueue(const std::string &fullPath,
+                                  WdtFileInfo &fileInfo) {
+}
 
+void SourceQueue::createIntoQueueInternal(SourceMetaData *metadata) {
+}
 
 void SourceQueue::setFileInfo(
     const std::vector<WdtFileInfo> &fileInfo) {
@@ -45,13 +59,11 @@ const std::vector<WdtFileInfo> &SourceQueue::getFileInfo() const {
   return fileInfo_;
 }
 
-std::vector<SourceMetaData *>
-    &SourceQueue::getDiscoveredFilesMetaData() {
+std::vector<SourceMetaData *> &SourceQueue::getDiscoveredFilesMetaData() {
   return sharedFileData_;
 }
 
-std::pair<int64_t, ErrorCode> SourceQueue::getNumBlocksAndStatus()
-    const {
+std::pair<int64_t, ErrorCode> SourceQueue::getNumBlocksAndStatus() const {
   std::lock_guard<std::mutex> lock(mutex_);
   ErrorCode status = OK;
   if (!failedSourceStats_.empty() || !failedDirectories_.empty()) {
@@ -84,6 +96,10 @@ void SourceQueue::clearSourceQueue() {
   }
 }
 
+bool SourceQueue::buildQueueSynchronously() {
+  return true;
+}
+
 void SourceQueue::returnToQueue(
     std::vector<std::unique_ptr<ByteSource>> &sources) {
   int returnedCount = 0;
@@ -112,6 +128,64 @@ void SourceQueue::smartNotify(int32_t addedSource) {
   for (int i = 0; i < addedSource; i++) {
     conditionNotEmpty_.notify_one();
   }
+}
+void setPreviouslyReceivedChunks(
+    std::vector<FileChunksInfo> &previouslyTransferredChunks) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  WDT_CHECK_EQ(0, numBlocksDequeued_);
+  // reset all the queue variables
+  nextSeqId_ = 0;
+  totalFileSize_ = 0;
+  numEntries_ = 0;
+  numBlocks_ = 0;
+  for (auto &chunkInfo : previouslyTransferredChunks) {
+    nextSeqId_ = std::max(nextSeqId_, chunkInfo.getSeqId() + 1);
+    auto fileName = chunkInfo.getFileName();
+    previouslyTransferredChunks_.insert(
+        std::make_pair(std::move(fileName), std::move(chunkInfo)));
+  }
+  clearSourceQueue();
+  // recreate the queue
+  for (const auto metadata : sharedFileData_) {
+    // TODO: do not notify inside createIntoQueueInternal. This method still
+    // holds the lock, so no point in notifying
+    createIntoQueueInternal(metadata);
+  }
+  enqueueFilesToBeDeleted();
+}
+
+std::thread SourceQueue::buildQueueAsynchronously() {
+  // relying on RVO (and thread not copyable to avoid multiple ones)
+  return std::thread(&SourceQueue::buildQueueSynchronously, this);
+}
+
+bool SourceQueue::explore() {
+  return true;
+}
+
+void SourceQueue::setPreviouslyReceivedChunks(
+    std::vector<FileChunksInfo> &previouslyTransferredChunks) {
+  std::unique_lock<std::mutex> lock(mutex_);
+  WDT_CHECK_EQ(0, numBlocksDequeued_);
+  // reset all the queue variables
+  nextSeqId_ = 0;
+  totalFileSize_ = 0;
+  numEntries_ = 0;
+  numBlocks_ = 0;
+  for (auto &chunkInfo : previouslyTransferredChunks) {
+    nextSeqId_ = std::max(nextSeqId_, chunkInfo.getSeqId() + 1);
+    auto fileName = chunkInfo.getFileName();
+    previouslyTransferredChunks_.insert(
+        std::make_pair(std::move(fileName), std::move(chunkInfo)));
+  }
+  clearSourceQueue();
+  // recreate the queue
+  for (const auto metadata : sharedFileData_) {
+    // TODO: do not notify inside createIntoQueueInternal. This method still
+    // holds the lock, so no point in notifying
+    createIntoQueueInternal(metadata);
+  }
+  enqueueFilesToBeDeleted();
 }
 
 std::unique_ptr<ByteSource> SourceQueue::getNextSource(
@@ -151,5 +225,20 @@ std::unique_ptr<ByteSource> SourceQueue::getNextSource(
     failedSourceStats_.emplace_back(std::move(source->getTransferStats()));
   }
 }
+
+
+std::vector<TransferStats> &SourceQueue::getFailedSourceStats() {
+  while (!sourceQueue_.empty()) {
+    failedSourceStats_.emplace_back(
+        std::move(sourceQueue_.top()->getTransferStats()));
+    sourceQueue_.pop();
+  }
+  return failedSourceStats_;
+}
+
+std::vector<string> &SourceQueue::getFailedDirectories() {
+  return failedDirectories_;
+}
+
 
 }

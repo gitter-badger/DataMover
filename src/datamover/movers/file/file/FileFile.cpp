@@ -1,17 +1,14 @@
-
+#include <datamover/Throttler.h>
 #include <datamover/movers/file/file/FileFile.h>
 #include <datamover/movers/file/file/FileFileThread.h>
-#include <datamover/Throttler.h>
-
-#include <folly/lang/Bits.h>
-#include <folly/hash/Checksum.h>
 #include <folly/Conv.h>
 #include <folly/Memory.h>
 #include <folly/ScopeGuard.h>
 #include <folly/String.h>
+#include <folly/hash/Checksum.h>
+#include <folly/lang/Bits.h>
 
 namespace datamover {
-
 void FileFile::endCurTransfer() {
   endTime_ = Clock::now();
   WLOG(INFO) << "Last thread finished "
@@ -40,7 +37,8 @@ FileFile::FileFile(const WdtTransferRequest &transferRequest)
 
   /* Dont think i need
   if (getTransferId().empty()) {
-    WLOG(WARNING) << "FileFile without transferId... will likely fail to connect";
+    WLOG(WARNING) << "FileFile without transferId... will likely fail to
+  connect";
   }
   */
 }
@@ -67,7 +65,6 @@ ErrorCode FileFile::start() {
     }
     transferStatus_ = ONGOING;
   }
-
 
   checkAndUpdateBufferSize();
   const bool twoPhases = options_.two_phases;
@@ -120,7 +117,6 @@ bool FileFile::hasNewTransferStarted() const {
 }
 
 const WdtTransferRequest &FileFile::init() {
-
   // set up directory queue
   dirQueue_.reset(new DirectorySourceQueue(options_, transferRequest_.directory,
                                            &queueAbortChecker_));
@@ -141,7 +137,8 @@ const WdtTransferRequest &FileFile::init() {
   transferHistoryController_ =
       std::make_unique<TransferHistoryController>(*dirQueue_);
 
-  transferLogManager_ = std::make_unique<TransferLogManager>(options_, getDestination());
+  transferLogManager_ =
+      std::make_unique<TransferLogManager>(options_, getDestination());
   checkAndUpdateBufferSize();
   backlog_ = options_.backlog;
   if (getTransferId().empty()) {
@@ -150,8 +147,9 @@ const WdtTransferRequest &FileFile::init() {
 
   auto numThreads = transferRequest_.ports.size();
   // This creates the destination directory (which is needed for transferLogMgr)
-  fileCreator_.reset(new FileCreator(
-      getDestination(), numThreads, *transferLogManager_, options_.skip_writes));
+  fileCreator_.reset(new FileCreator(getDestination(), numThreads,
+                                     *transferLogManager_,
+                                     options_.skip_writes));
 
   transferRequest_.downloadResumptionEnabled =
       options_.enable_download_resumption;
@@ -220,11 +218,10 @@ const WdtTransferRequest &FileFile::init() {
   }
   transferRequest_.errorCode = code;
   return transferRequest_;
-
 }
 
 const std::string &FileFile::getDestination() const {
-  ///FIXME
+  /// FIXME
   return transferRequest_.destination;
 }
 
@@ -271,17 +268,17 @@ std::unique_ptr<TransferReport> FileFile::finish() {
   if (status == NOT_STARTED) {
     WLOG(WARNING) << "Even though transfer has not started, finish is called";
     // getTransferReport will set the error code to ERROR
-    if (useCallbacks){
-        transferFinishedCallback_(true);
+    if (useCallbacks) {
+      transferFinishedCallback_(true);
     }
-    
+
     return getTransferReport();
   }
   if (status == THREADS_JOINED) {
     WVLOG(1) << "Threads have already been joined. Returning the"
              << " existing transfer report";
-    if (useCallbacks){
-        transferFinishedCallback_(true);
+    if (useCallbacks) {
+      transferFinishedCallback_(true);
     }
     return getTransferReport();
   }
@@ -360,7 +357,7 @@ std::unique_ptr<TransferReport> FileFile::finish() {
              << transferReport->getSummary().getEffectiveTotalBytes() /
                     (totalTime - directoryTime) / kMbToB
              << " Mbytes/sec pure transfer rate)";
-  if (useCallbacks){
+  if (useCallbacks) {
     transferFinishedCallback_(true);
   }
   return transferReport;
@@ -545,5 +542,4 @@ void FileFile::traverseDestinationDir(
   }
   return;
 }
-
-}
+}  // namespace datamover
