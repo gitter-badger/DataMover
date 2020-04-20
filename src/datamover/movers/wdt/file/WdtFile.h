@@ -11,6 +11,7 @@
 #include <datamover/movers/wdt/file/WdtFileThread.h>
 #include <datamover/movers/MoverBase.h>
 #include <datamover/endpoints/file/FileCreator.h>
+#include <datamover/endpoints/file/DirectorySourceQueue.h>
 #include <datamover/util/IServerSocket.h>
 #include <datamover/util/TransferLogManager.h>
 #include <chrono>

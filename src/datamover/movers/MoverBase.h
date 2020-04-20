@@ -16,7 +16,6 @@
 #include <datamover/Throttler.h>
 #include <datamover/WdtOptions.h>
 #include <datamover/WdtThread.h>
-#include <datamover/endpoints/file/DirectorySourceQueue.h>
 #include <datamover/util/EncryptionUtils.h>
 #include <datamover/util/ThreadsController.h>
 #include <memory>

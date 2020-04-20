@@ -16,6 +16,12 @@ if true; then
 mkdir -p $BUILD_DIR
 rm -Rf $BUILD_DIR
 mkdir -p $BUILD_DIR
+
+mkdir -p $INST_DIR
+rm -Rf $INST_DIR
+mkdir -p $INST_DIR
+
+
 cd $BUILD_DIR
 
 ##################################
@@ -29,7 +35,6 @@ git clone https://github.com/facebook/folly.git
 git clone https://github.com/schuhschuh/gflags.git
 mkdir gflags/build
 cd gflags/build
-rm ${BUILD_DIR}/DataMover/src/datamover/CMakeCache.txt
 cmake \
     -DGFLAGS_NAMESPACE=google \
     -DBUILD_SHARED_LIBS=on \
@@ -72,7 +77,6 @@ git clone https://github.com/floitsch/double-conversion.git
 cd double-conversion;
 mkdir build
 cd build
-rm ${BUILD_DIR}/DataMover/src/datamover/CMakeCache.txt
 cmake \
     .. \
     -DCMAKE_PREFIX_PATH="${INST_DIR}/usr/local/" \
@@ -80,7 +84,7 @@ cmake \
     -DBUILD_SHARED_LIBS=on
 
 make -j
-#make install
+make install
 cd $BUILD_DIR
 
 ##################################
@@ -90,6 +94,9 @@ cd $BUILD_DIR
 mkdir -p dm_build
 rm -Rf dm_build
 mkdir -p dm_build
+mkdir -p dm_install
+rm -Rf dm_install
+mkdir -p dm_install
 
 fi
 
@@ -98,14 +105,13 @@ cp -r ${HOME}/git/DataMover ./
 
 
 cd ${BUILD_DIR}/dm_build
-rm ${BUILD_DIR}/DataMover/src/datamover/CMakeCache.txt
 
+#    -DBOOST_INCLUDEDIR=/usr/include/boost169 \
+#    -DBOOST_LIBRARYDIR=/usr/lib64/boost169 \
 cmake3 \
     ${BUILD_DIR}/DataMover/src/datamover \
     -DBUILD_TESTING=off \
     -DFOLLY_SOURCE_DIR=${BUILD_DIR}/folly \
-    -DBOOST_INCLUDEDIR=/usr/include/boost169 \
-    -DBOOST_LIBRARYDIR=/usr/lib64/boost169 \
     -DCMAKE_INSTALL_PREFIX:PATH=${INST_DIR}/usr/local/
 
 #    -DCMAKE_VERBOSE_MAKEFILE=on

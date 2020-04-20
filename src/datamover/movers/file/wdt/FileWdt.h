@@ -10,6 +10,7 @@
 
 #include <datamover/movers/MoverBase.h>
 #include <datamover/util/ClientSocket.h>
+#include <datamover/endpoints/file/DirectorySourceQueue.h>
 #include <chrono>
 #include <iostream>
 #include <memory>

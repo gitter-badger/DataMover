@@ -34,10 +34,10 @@ namespace datamover {
  * which may or may not make it easy to plug a different implementation
  * (as shown by the current implementation of Sender.cpp)
  */
-class DirectorySourceQueue : public SourceQueue {
+class S3SourceQueue : public SourceQueue {
  public:
   /**
-   * Create a DirectorySourceQueue.
+   * Create a S3SourceQueue.
    * Call buildQueueSynchronously() or buildQueueAsynchronously() separately
    * to actually recurse over the root directory gather files and sizes.
    *
@@ -45,7 +45,7 @@ class DirectorySourceQueue : public SourceQueue {
    * @param rootDir               root directory to recurse on
    * @param abortChecker          abort checker
    */
-  DirectorySourceQueue(const WdtOptions &options, const std::string &rootDir,
+  S3SourceQueue(const WdtOptions &options, const std::string &rootDir,
                        IAbortChecker const *abortChecker);
 
   /**
@@ -90,41 +90,44 @@ class DirectorySourceQueue : public SourceQueue {
     directReads_ = directReads;
   }
 
-  /**
-   * Sets whether to follow symlink or not
-   *
-   * @param followSymlinks        whether to follow symlink or not
-   */
-  void setFollowSymlinks(bool followSymlinks);
-
-  ~DirectorySourceQueue() override;
+  ~S3SourceQueue() override;
 
   /**
-   * Allows to change the root directory, must not be empty, trailing
-   * slash is automatically added if missing. Can be relative.
-   * if follow symlink is set the directory will be resolved as absolute
+   * checks to see if path in the s3 bucket exists
    * path.
    * @return    true if successful, false on error (logged)
    */
   bool setRootDir(const std::string &newRootDir);
 
  private:
+
+  //S3 client connection
+  Aws::S3::S3Client s3_client_;
+
+  //default s3 options
+  Aws::SDKOptions aws_options;
+
+  //S3 credenchals
+  Aws::Auth::AWSCredentials awsClientCreds_;
+
+  Aws::Client::ClientConfiguration awsClientConfig_;
+
   /**
-   * Resolves a symlink.
+   * No Op, not needed for S3
    *
    * @return                realpath or empty string on error (logged)
    */
   std::string resolvePath(const std::string &path);
 
   /**
-   * Traverse rootDir_ to gather files and sizes to enqueue
+   * Traverse rootDir_ to gather files to enqueue
    *
    * @return                true on success, false on error
    */
   bool explore();
 
   /**
-   * Stat the input files and populate queue
+   * Stat the input files get size and populate queue
    * @return                true on success, false on error
    */
   bool enqueueFiles();
@@ -149,20 +152,6 @@ class DirectorySourceQueue : public SourceQueue {
   /// if file deletion is enabled, extra files to be deleted are enqueued. This
   /// method should be called while holding the lock
   void enqueueFilesToBeDeleted();
-
-  /// Whether to follow symlinks or not
-  bool followSymlinks_{false};
-
-  /**
-   * Count and trigger of files to open (negative is keep opening until we run
-   * out of fd, positive is how many files we can still open, 0 is stop opening
-   * files).
-   * Sender only (Receiver download resumption directory discovery should not
-   * open files).
-   */
-  int32_t openFilesDuringDiscovery_{0};
-  /// Should the WdtFileInfo created during discovery have direct read mode set
-  bool directReads_{false};
 
   /// A map from relative file name to previously received chunks
   std::unordered_map<std::string, FileChunksInfo> previouslyTransferredChunks_;

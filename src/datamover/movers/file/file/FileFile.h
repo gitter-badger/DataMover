@@ -3,6 +3,7 @@
 
 #include <datamover/movers/MoverBase.h>
 #include <datamover/endpoints/file/FileCreator.h>
+#include <datamover/endpoints/file/DirectorySourceQueue.h>
 #include <chrono>
 #include <iostream>
 #include <memory>

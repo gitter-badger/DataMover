@@ -48,6 +48,9 @@ struct WdtFileInfo {
   /// Verify that we can align for reading in O_DIRECT and
   /// the flags make sense
   void verifyAndFixFlags();
+
+  /// S3 specific stuff.
+  std::string& S3Tag{""};
 };
 
 /**

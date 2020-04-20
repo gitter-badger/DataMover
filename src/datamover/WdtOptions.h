@@ -424,14 +424,20 @@ class WdtOptions {
   // to the actual Amazon AWS servers. Otherwise it should remain "us-east-1".
   Aws::String awsRegion{"us-east-1"};
 
+  Aws::Http::Scheme awsScheme{Aws::Http::Scheme::HTTP}
+
   // The s3 destination enpdoing you are connecting to, this should include the port, even if its 80 or 443.
   Aws::String awsEndpointOverride{""};
 
   // If the ssl cert should be verified or not.
   bool awsVerifySSL{false};
 
+  long awsRequestTimeoutMs{5 * 60 * 1000};
+
+  long awsConnectTimeoutMs{5 * 60 * 1000};
+
   // Total number of simultaneous connections allowed by the s3 client.
-  int awsMaxConnections{128};
+  unsigned awsMaxConnections{128};
 
   // Effectively the username you are connectiong to s3 as.
   Aws::String awsAccessKeyId{""};
@@ -441,6 +447,9 @@ class WdtOptions {
 
   // The s3 bucket you are going to use.
   Aws::String awsBucket{""};
+
+  Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy awsPayloadSigningPolicy{
+    Aws::Client::AWSAuthV4Signer::PayloadSigningPolicy::Never}
 
   // Forces all objects to be uploaded as multipart objects even if they are under the threshold.
   bool awsForceMultipartObjects{true};

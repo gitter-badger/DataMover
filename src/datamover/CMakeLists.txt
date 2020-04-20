@@ -90,40 +90,41 @@ set (FOLLY_CPP_SRC
 )
 
 
-# WDT's library proper - comes from: ls -1 *.cpp | grep -iv test
+# DataMover's library proper - comes from: ls -1 *.cpp | grep -iv test
 
-add_library(datamover_min
-WdtTransferRequest.cpp
-WdtOptions.cpp
-util/CommonImpl.cpp
-util/ServerSocket.cpp
-util/Stats.cpp
-util/ClientSocket.cpp
-util/ThreadTransferHistory.cpp
-util/SerializationUtil.cpp
-util/WdtSocket.cpp
-util/ThreadsController.cpp
-util/EncryptionUtils.cpp
-util/TransferLogManager.cpp
-endpoints/file/FileWriter.cpp
-endpoints/file/DirectorySourceQueue.cpp
-endpoints/file/FileByteSource.cpp
-endpoints/file/FileCreator.cpp
-Reporting.cpp
-Throttler.cpp
-ErrorCodes.cpp
-WdtThread.cpp
-movers/wdt/file/WdtFile.cpp
-movers/wdt/file/WdtFileThread.cpp
-movers/file/file/FileFileThread.cpp
-movers/file/file/FileFile.cpp
-movers/file/wdt/FileWdt.cpp
-movers/file/wdt/FileWdtThread.cpp
-movers/MoverBase.cpp
-Protocol.cpp
+add_library(datamover SHARED
+    WdtTransferRequest.cpp
+    WdtOptions.cpp
+    util/CommonImpl.cpp
+    util/ServerSocket.cpp
+    util/Stats.cpp
+    util/ClientSocket.cpp
+    util/ThreadTransferHistory.cpp
+    util/SerializationUtil.cpp
+    util/WdtSocket.cpp
+    util/ThreadsController.cpp
+    util/EncryptionUtils.cpp
+    util/TransferLogManager.cpp
+    endpoints/SourceQueue.cpp
+    endpoints/file/FileWriter.cpp
+    endpoints/file/DirectorySourceQueue.cpp
+    endpoints/file/FileByteSource.cpp
+    endpoints/file/FileCreator.cpp
+    Reporting.cpp
+    Throttler.cpp
+    ErrorCodes.cpp
+    WdtThread.cpp
+    movers/wdt/file/WdtFile.cpp
+    movers/wdt/file/WdtFileThread.cpp
+    movers/file/file/FileFileThread.cpp
+    movers/file/file/FileFile.cpp
+    movers/file/wdt/FileWdt.cpp
+    movers/file/wdt/FileWdtThread.cpp
+    movers/MoverBase.cpp
+    Protocol.cpp
 )
 
-TARGET_LINK_LIBRARIES(datamover_min
+TARGET_LINK_LIBRARIES(datamover
     aws-cpp-sdk-core
     aws-c-event-stream
     aws-cpp-sdk-s3
@@ -132,12 +133,12 @@ TARGET_LINK_LIBRARIES(datamover_min
 )
 
 # Source files that depend on gflags and provide flags -> options init
-set (DM_FLAGS_RELATED_SRC
-util/WdtFlags.cpp
-)
-add_library(datamover ${DM_FLAGS_RELATED_SRC})
+#set (DM_FLAGS_RELATED_SRC
+#util/WdtFlags.cpp
+#)
+#add_library(datamover ${DM_FLAGS_RELATED_SRC})
 
-target_link_libraries(datamover datamover_min)
+target_link_libraries(datamover)
 
 
 
@@ -166,7 +167,7 @@ find_package(OpenSSL REQUIRED)
 include_directories(${OPENSSL_INCLUDE_DIR})
 
 # You can also add jemalloc to the list if you have it/want it
-target_link_libraries(datamover_min
+target_link_libraries(datamover
   folly4datamover
   ${GLOG_LIBRARY}
   ${GFLAGS_LIBRARY}
@@ -238,11 +239,11 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 set_target_properties(PROPERTIES COMPILE_DEFINITIONS "STANDALONE_APP")
 
-target_link_libraries(datamover_min)
+target_link_libraries(datamover)
 
 ### Install rules
 set_target_properties( PROPERTIES RUNTIME_OUTPUT_NAME "datamover")
-install(TARGETS datamover datamover_min folly4datamover
+install(TARGETS datamover folly4datamover
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib64
   ARCHIVE DESTINATION lib64
@@ -250,15 +251,13 @@ install(TARGETS datamover datamover_min folly4datamover
 
 ### Install header files
 
-# Find the . files in the root directory
-
 file(GLOB headers "*.h")
 foreach(header ${headers})
   install(FILES ${header} DESTINATION include/datamover)
 endforeach()
 
-# Install the .h files in the util with directory structure maintained
 
+# Install the .h files in the util with directory structure maintained
 set (FOLLY_HEADERS
     "/folly/synchronization/RWSpinLock.h"
     "/folly/Portability.h"
@@ -296,14 +295,14 @@ set (FOLLY_HEADERS
     "/folly/hash/SpookyHashV1.h"
     "/folly/lang/Bits.h"
     )
-#foreach(header ${FOLLY_HEADERS})
-#    get_filename_component(header_dir "${header}" PATH)
-#    install(
-#        FILES "${FOLLY_SOURCE_DIR}${header}"
-#        DESTINATION "include/${header_dir}"
-#    )
-#endforeach()
-#
+foreach(header ${FOLLY_HEADERS})
+    get_filename_component(header_dir "${header}" PATH)
+    install(
+        FILES "${FOLLY_SOURCE_DIR}${header}"
+        DESTINATION "include/${header_dir}"
+    )
+endforeach()
+
 install(
     FILES "${PROJECT_BINARY_DIR}/folly/folly-config.h"
     DESTINATION "include/folly/"
@@ -315,8 +314,9 @@ install(DIRECTORY "${PROJECT_SOURCE_DIR}/util" DESTINATION include/datamover
 install(DIRECTORY "${PROJECT_SOURCE_DIR}/movers" DESTINATION include/datamover
         FILES_MATCHING PATTERN "*.h")
 
-# wcp script
-install(PROGRAMS test/wcp.sh DESTINATION bin RENAME wcp)
+install(DIRECTORY "${PROJECT_SOURCE_DIR}/endpoints" DESTINATION include/datamover
+        FILES_MATCHING PATTERN "*.h")
+
 
 
 ### Everything below is about testing (and not required to create datamover)

@@ -1,5 +1,4 @@
 
-#include <datamover/endpoints/SourceQueue.h>
 #include "SourceQueue.h"
 
 namespace datamover {
@@ -129,7 +128,7 @@ void SourceQueue::smartNotify(int32_t addedSource) {
     conditionNotEmpty_.notify_one();
   }
 }
-void setPreviouslyReceivedChunks(
+void SourceQueue::setPreviouslyReceivedChunks(
     std::vector<FileChunksInfo> &previouslyTransferredChunks) {
   std::unique_lock<std::mutex> lock(mutex_);
   WDT_CHECK_EQ(0, numBlocksDequeued_);
@@ -163,29 +162,7 @@ bool SourceQueue::explore() {
   return true;
 }
 
-void SourceQueue::setPreviouslyReceivedChunks(
-    std::vector<FileChunksInfo> &previouslyTransferredChunks) {
-  std::unique_lock<std::mutex> lock(mutex_);
-  WDT_CHECK_EQ(0, numBlocksDequeued_);
-  // reset all the queue variables
-  nextSeqId_ = 0;
-  totalFileSize_ = 0;
-  numEntries_ = 0;
-  numBlocks_ = 0;
-  for (auto &chunkInfo : previouslyTransferredChunks) {
-    nextSeqId_ = std::max(nextSeqId_, chunkInfo.getSeqId() + 1);
-    auto fileName = chunkInfo.getFileName();
-    previouslyTransferredChunks_.insert(
-        std::make_pair(std::move(fileName), std::move(chunkInfo)));
-  }
-  clearSourceQueue();
-  // recreate the queue
-  for (const auto metadata : sharedFileData_) {
-    // TODO: do not notify inside createIntoQueueInternal. This method still
-    // holds the lock, so no point in notifying
-    createIntoQueueInternal(metadata);
-  }
-  enqueueFilesToBeDeleted();
+void SourceQueue::enqueueFilesToBeDeleted(){
 }
 
 std::unique_ptr<ByteSource> SourceQueue::getNextSource(
@@ -236,9 +213,11 @@ std::vector<TransferStats> &SourceQueue::getFailedSourceStats() {
   return failedSourceStats_;
 }
 
-std::vector<string> &SourceQueue::getFailedDirectories() {
+std::vector<std::string> &SourceQueue::getFailedDirectories() {
   return failedDirectories_;
 }
 
+/// Transfer stats for sources which are not transferred
+std::vector<TransferStats> failedSourceStats_;
 
 }

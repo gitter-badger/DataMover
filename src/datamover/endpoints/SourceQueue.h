@@ -9,6 +9,7 @@
 #pragma once
 
 #include <datamover/ByteSource.h>
+#include <datamover/Reporting.h>
 
 #include <condition_variable>
 #include <memory>
@@ -59,6 +60,20 @@ class SourceQueue {
    */
   virtual void createIntoQueue(const std::string &fullPath,
                                WdtFileInfo &fileInfo);
+
+  /// if file deletion is enabled, extra files to be deleted are enqueued. This
+  /// method should be called while holding the lock
+  virtual void enqueueFilesToBeDeleted();
+
+  /// enable extra file deletion in the receiver side
+  void enableFileDeletion() {
+    deleteFiles_ = true;
+  }
+
+  /// Returns the time it took to traverse the directory tree
+  double getDirectoryTime() const {
+    return directoryTime_;
+  }
 
   /**
    * Starts a new thread to build the queue @see buildQueueSynchronously()
@@ -119,9 +134,6 @@ class SourceQueue {
   /// @param blockSizeMbytes    block size in Mbytes
   void setBlockSizeMbytes(int64_t blockSizeMbytes);
 
-  /// protects initCalled_/initFinished_/sourceQueue_/failedSourceStats_
-  mutable std::mutex mutex_;
-
   /// condition variable indicating sourceQueue_ is not empty
   mutable std::condition_variable conditionNotEmpty_;
 
@@ -173,6 +185,9 @@ class SourceQueue {
 
   /// List of files to enqueue instead of recursing over rootDir_.
   std::vector<WdtFileInfo> fileInfo_;
+
+  /// protects initCalled_/initFinished_/sourceQueue_/failedSourceStats_
+  mutable std::mutex mutex_;
 
   /**
    * Stat the FileInfo input files (if their size aren't already specified) and
@@ -252,8 +267,11 @@ class SourceQueue {
   /// contribution
   std::vector<SourceMetaData *> sharedFileData_;
 
+  /// A map from relative file name to previously received chunks
+  std::unordered_map<std::string, FileChunksInfo> previouslyTransferredChunks_;
+
   /// Transfer stats for sources which are not transferred
-  std::vector<TransferStats> failedSourceStats_;
+  std::vector<TransferStats> failedsourcestats_;
 
   /// directories which could not be opened
   std::vector<std::string> failedDirectories_;
@@ -309,5 +327,12 @@ class SourceQueue {
                       std::vector<std::unique_ptr<ByteSource>>,
                       SourceComparator>
       sourceQueue_;
+
+  /// Transfer stats for sources which are not transferred
+  std::vector<TransferStats> failedSourceStats_;
+
+  /// Stores the time difference between the start and the end of the
+  /// traversal of directory
+  double directoryTime_{0};
 };
 }  // namespace datamover

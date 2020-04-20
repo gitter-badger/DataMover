@@ -7,6 +7,7 @@
  * of patent rights can be found in the PATENTS file in the same directory.
  */
 #include <datamover/movers/wdt/file/WdtFile.h>
+#include <datamover/endpoints/file/DirectorySourceQueue.h>
 #include <datamover/util/EncryptionUtils.h>
 #include <datamover/util/ServerSocket.h>
 
